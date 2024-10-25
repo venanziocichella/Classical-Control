@@ -1,0 +1,13 @@
+Transform {
+    DEF RotatingBar   # Name of the node (important for referencing)
+    translation 0 0 0  # Initial position (center of rotation)
+    rotation 0 0 1 0   # Axis of rotation (z-axis here) and initial angle (0 rad)
+    children [
+        Shape {
+            geometry Box { size 2 0.1 0.1 }  # Bar dimensions (2 units long)
+            appearance Appearance {
+                material Material { diffuseColor 0.5 0.5 1 }  # Bar color
+            }
+        }
+    ]
+}
