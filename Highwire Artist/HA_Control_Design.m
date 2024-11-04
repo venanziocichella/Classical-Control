@@ -13,6 +13,9 @@ g = 9.81;
 %% System
 G = 6/(6*m*l^2+2*M*L^2)/(s^2-3*g*(2*m*l+M*L)/(6*m*l^2+2*M*L^2));
 
+C = 1;
+rlocusplot(C*G)
+
 
 
 
