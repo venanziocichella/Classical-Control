@@ -36,6 +36,7 @@ distScale = 0.3;    % your input is scaled by this in CONTROLLER mode (disturban
 % SimpleTF (in this folder) needs no toolbox; s = tf('s') works too.
 s = SimpleTF.s;
 C = 3000*(s+2)/(s+5);   % lead compensator from HA_Control_Design.m
+% C = 3000*(s+2)*(s+0.5)/(s*(s+5));   % lead + integrator from HA_RootLocus_Design.m
 [numC, denC] = tfdata(C, 'v');
 
 %% Plant (same equations as the HA_sim.slx subsystem), state x = [theta; theta'; psi; psi']

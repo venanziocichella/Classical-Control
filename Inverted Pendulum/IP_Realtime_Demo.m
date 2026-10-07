@@ -32,6 +32,7 @@ distScale = 0.2;    % your input is scaled by this in CONTROLLER mode (disturban
 % SimpleTF (in this folder) needs no toolbox; s = tf('s') works too.
 s = SimpleTF.s;
 C = 11.8*(1 + 0.2*s + 0.05/s)/(s/100+1);   % PID from IP_Control_Design.m
+% C = 10*(s+2)*(s+3)/(s*(s/100+1));        % PID from IP_RootLocus_Design.m
 [numC, denC] = tfdata(C, 'v');
 
 %% Plant: theta'' = g/L*sin(theta) - b*theta' + u
