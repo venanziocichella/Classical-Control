@@ -88,7 +88,7 @@ gauge = plot(ax, [0 0], [-1.6 -1.6], 'LineWidth', 8, 'Color', [0 0.45 0.74]);
 text(ax, -3.2, -1.6, 'torque', 'HorizontalAlignment', 'right', 'FontSize', 10);
 % Artist (drawn upright, rotated about the feet by theta)
 tr = hgtransform('Parent', ax);
-line('Parent', tr, 'XData', [-0.35 0 0.35], 'YData', [0 0.45*H 0], 'LineWidth', 4, 'Color', [0.2 0.2 0.2]);
+line('Parent', tr, 'XData', [-0.08 0 0.08], 'YData', [0 0.45*H 0], 'LineWidth', 4, 'Color', [0.2 0.2 0.2]);
 line('Parent', tr, 'XData', [0 0], 'YData', [0.45*H 0.85*H], 'LineWidth', 6, 'Color', [0.85 0.33 0.1]);
 line('Parent', tr, 'XData', [-0.45 0 0.45], 'YData', [hp 0.8*H hp], 'LineWidth', 3, 'Color', [0.2 0.2 0.2]);
 th = linspace(0, 2*pi, 40);
