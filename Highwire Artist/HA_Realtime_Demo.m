@@ -31,11 +31,12 @@ uHumanMax = 600;    % torque at full stick / full mouse deflection [N m]
 uCtrlMax  = 3000;   % controller saturation [N m]
 distScale = 0.3;    % your input is scaled by this in CONTROLLER mode (disturbance)
 
-% Controller from HA_Control_Design.m:
-%   C = 3000*(s+2)/(s+5),  [numC, denC] = tfdata(C, 'v')
-numC = [3000 6000];
-denC = [1 5];
+% Controller: write any proper transfer function in s.
 % Error e = 0 - theta, pole torque u = C(s) e.
+% SimpleTF (in this folder) needs no toolbox; s = tf('s') works too.
+s = SimpleTF.s;
+C = 3000*(s+2)/(s+5);   % lead compensator from HA_Control_Design.m
+[numC, denC] = tfdata(C, 'v');
 
 %% Plant (same equations as the HA_sim.slx subsystem), state x = [theta; theta'; psi; psi']
 %   theta: artist tilt from vertical, psi: pole angle, u: torque on the pole
@@ -116,7 +117,7 @@ uilabel(pn, 'Text', 'Input device', 'FontWeight', 'bold');
 ddInput = uidropdown(pn, 'Items', {'Auto', 'Joystick', 'Mouse', 'Keyboard'});
 uilabel(pn, 'Text', 'Speed', 'FontWeight', 'bold');
 uidropdown(pn, 'Items', {'1x (real time)', '0.5x', '0.25x'}, ...
-    'ValueChangedFcn', @(s,~) setSpeed(s.Value));
+    'ValueChangedFcn', @(src,~) setSpeed(src.Value));
 uibutton(pn, 'Text', 'Reset  (R)', 'ButtonPushedFcn', @(~,~) reset());
 uibutton(pn, 'Text', 'Pause  (Space)', 'ButtonPushedFcn', @(~,~) togglePause());
 lblTime = uilabel(pn, 'Text', 'Time on the wire: 0.0 s', 'FontSize', 14);
@@ -276,8 +277,8 @@ end
         tUp = 0;
     end
 
-    function setSpeed(s)
-        switch s
+    function setSpeed(v)
+        switch v
             case '0.5x',  speed = 0.5;
             case '0.25x', speed = 0.25;
             otherwise,    speed = 1;
@@ -330,6 +331,9 @@ function [A, B, C, D] = localTf2ss(num, den)
 % (avoids needing the Control System Toolbox).
 num = num(:).'/den(1); den = den(:).'/den(1);
 n = numel(den) - 1;
+if numel(num) > n + 1
+    error('The controller C(s) must be proper (numerator degree <= denominator degree).');
+end
 num = [zeros(1, n + 1 - numel(num)) num];
 D = num(1);
 r = num - D*den;                 % strictly proper remainder
