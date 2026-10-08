@@ -14,9 +14,9 @@ function MSD_Realtime_Demo
 %     Keyboard         : Left/Right arrows.
 %   Keys: H = human, C = controller, R = reset, Space = pause.
 %
-%   Uses only core MATLAB (uifigure, uihtml). No Simulink or toolboxes are
-%   needed. The joystick is read through the standard browser Gamepad API
-%   inside a uihtml component (R2019b or newer).
+%   Uses core MATLAB graphics (uifigure, uihtml) plus tf from the Control
+%   System Toolbox. No Simulink is needed. The joystick is read through the
+%   standard browser Gamepad API inside a uihtml component (R2019b or newer).
 
 %% Parameters (edit freely, same values as MSD_Control_Design.m)
 m = 1;              % mass [kg]
@@ -31,8 +31,7 @@ distScale = 0.5;    % your input is scaled by this in CONTROLLER mode (disturban
 
 % Controller: write any proper transfer function in s.
 % Error e = r - x (target minus position), force u = C(s) e.
-% SimpleTF (in this folder) needs no toolbox; s = tf('s') works too.
-s = SimpleTF.s;
+s = tf('s');
 C = 100*(1 + 3/s);                          % PI from MSD_Control_Design.m
 % C = 20*(s+4)*(s+6)/(s*(s/100+1));         % PID from MSD_RootLocus_Design.m
 [numC, denC] = tfdata(C, 'v');
@@ -325,8 +324,7 @@ end
 end
 
 function [A, B, C, D] = localTf2ss(num, den)
-% Controllable canonical realization of a proper transfer function
-% (avoids needing the Control System Toolbox).
+% Controllable canonical realization of a proper transfer function.
 num = num(:).'/den(1); den = den(:).'/den(1);
 n = numel(den) - 1;
 if numel(num) > n + 1

@@ -13,9 +13,9 @@ function IP_Realtime_Demo
 %     Keyboard         : Left/Right arrows.
 %   Keys: H = human, C = controller, R = reset, Space = pause.
 %
-%   Uses only core MATLAB (uifigure, uihtml, hgtransform). No Simulink or
-%   toolboxes are needed. The joystick is read through the standard browser
-%   Gamepad API inside a uihtml component (R2019b or newer).
+%   Uses core MATLAB graphics (uifigure, uihtml, hgtransform) plus tf from
+%   the Control System Toolbox. No Simulink is needed. The joystick is read
+%   through the standard browser Gamepad API inside a uihtml component (R2019b or newer).
 
 %% Parameters (edit freely)
 g = 9.8;            % gravity [m/s^2]
@@ -29,8 +29,7 @@ distScale = 0.2;    % your input is scaled by this in CONTROLLER mode (disturban
 
 % Controller: write any proper transfer function in s.
 % Error e = 0 - theta, control input u = C(s) e.
-% SimpleTF (in this folder) needs no toolbox; s = tf('s') works too.
-s = SimpleTF.s;
+s = tf('s');
 C = 11.8*(1 + 0.2*s + 0.05/s)/(s/100+1);   % PID from IP_Control_Design.m
 % C = 10*(s+2)*(s+3)/(s*(s/100+1));        % PID from IP_RootLocus_Design.m
 [numC, denC] = tfdata(C, 'v');
@@ -308,8 +307,7 @@ end
 end
 
 function [A, B, C, D] = localTf2ss(num, den)
-% Controllable canonical realization of a proper transfer function
-% (avoids needing the Control System Toolbox).
+% Controllable canonical realization of a proper transfer function.
 num = num(:).'/den(1); den = den(:).'/den(1);
 n = numel(den) - 1;
 if numel(num) > n + 1

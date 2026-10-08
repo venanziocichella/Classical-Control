@@ -14,9 +14,9 @@ function HA_Realtime_Demo
 %     Keyboard         : Left/Right arrows.
 %   Keys: H = human, C = controller, R = reset, Space = pause.
 %
-%   Uses only core MATLAB (uifigure, uihtml, hgtransform). No Simulink or
-%   toolboxes are needed. The joystick is read through the standard browser
-%   Gamepad API inside a uihtml component (R2019b or newer).
+%   Uses core MATLAB graphics (uifigure, uihtml, hgtransform) plus tf from
+%   the Control System Toolbox. No Simulink is needed. The joystick is read
+%   through the standard browser Gamepad API inside a uihtml component (R2019b or newer).
 
 %% Parameters (edit freely, same values as HA_Control_Design.m)
 J = 10.4;           % pole inertia [kg m^2]
@@ -33,8 +33,7 @@ distScale = 0.3;    % your input is scaled by this in CONTROLLER mode (disturban
 
 % Controller: write any proper transfer function in s.
 % Error e = 0 - theta, pole torque u = C(s) e.
-% SimpleTF (in this folder) needs no toolbox; s = tf('s') works too.
-s = SimpleTF.s;
+s = tf('s');
 C = 3000*(s+2)/(s+5);   % lead compensator from HA_Control_Design.m
 % C = 3000*(s+2)*(s+0.5)/(s*(s+5));   % lead + integrator from HA_RootLocus_Design.m
 [numC, denC] = tfdata(C, 'v');
@@ -328,8 +327,7 @@ end
 end
 
 function [A, B, C, D] = localTf2ss(num, den)
-% Controllable canonical realization of a proper transfer function
-% (avoids needing the Control System Toolbox).
+% Controllable canonical realization of a proper transfer function.
 num = num(:).'/den(1); den = den(:).'/den(1);
 n = numel(den) - 1;
 if numel(num) > n + 1
