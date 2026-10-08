@@ -3,7 +3,7 @@ function MSD_Realtime_Demo
 %
 %   Run MSD_Realtime_Demo and try to move the mass to the green target (it
 %   jumps to a new position every few seconds), then hand the job over to the
-%   controller designed in MSD_Control_Design / MSD_RootLocus_Design.
+%   controller designed in MSD_Control_Design.
 %
 %   Inputs (HUMAN mode = your input is the force on the mass,
 %           CONTROLLER mode = your input is a disturbance force):
@@ -33,7 +33,6 @@ distScale = 0.5;    % your input is scaled by this in CONTROLLER mode (disturban
 % Error e = r - x (target minus position), force u = C(s) e.
 s = tf('s');
 C = 100*(1 + 3/s);                          % PI from MSD_Control_Design.m
-% C = 20*(s+4)*(s+6)/(s*(s/100+1));         % PID from MSD_RootLocus_Design.m
 [numC, denC] = tfdata(C, 'v');
 
 %% Plant: m x'' + b x' + k x = u,  G(s) = 1/(m s^2 + b s + k)
