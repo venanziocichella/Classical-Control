@@ -17,6 +17,16 @@ function IPC_Realtime_Demo
 %   Uses core MATLAB graphics (uifigure, uihtml, hgtransform) plus tf from
 %   the Control System Toolbox. No Simulink is needed. The joystick is read
 %   through the standard browser Gamepad API inside a uihtml component (R2019b or newer).
+%
+%   >>> TO TRY YOUR OWN CONTROLLER, EDIT THE LINE  C = ...  IN THE BOX BELOW <<<
+
+%% ===================== YOUR CONTROLLER: EDIT HERE =====================
+s = tf('s');
+C = -10*(6 + s + 8/s)/(s/100+1);   % <-- type your controller C(s) here
+%% ======================================================================
+% (default: PID from IPC_Control_Design.m)
+% The controller sees the error e = 0 - theta (r = 0, upright) and
+% produces the force on the cart u = C(s) e.
 
 %% Parameters (edit freely, same values as IPC_Control_Design.m / Exercise 4.4)
 M = 0.5;            % cart mass [kg]
@@ -31,10 +41,6 @@ uHumanMax = 10;     % force at full stick / full mouse deflection [N]
 uCtrlMax  = 30;     % controller saturation [N]
 distScale = 0.3;    % your input is scaled by this in CONTROLLER mode (disturbance)
 
-% Controller: write any proper transfer function in s.
-% Error e = 0 - theta, force on the cart u = C(s) e.
-s = tf('s');
-C = -10*(6 + s + 8/s)/(s/100+1);   % PID from IPC_Control_Design.m
 [numC, denC] = tfdata(C, 'v');
 
 %% Plant, state x = [theta; theta'; cart position; cart velocity]

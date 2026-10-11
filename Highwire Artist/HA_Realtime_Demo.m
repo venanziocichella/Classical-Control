@@ -17,6 +17,16 @@ function HA_Realtime_Demo
 %   Uses core MATLAB graphics (uifigure, uihtml, hgtransform) plus tf from
 %   the Control System Toolbox. No Simulink is needed. The joystick is read
 %   through the standard browser Gamepad API inside a uihtml component (R2019b or newer).
+%
+%   >>> TO TRY YOUR OWN CONTROLLER, EDIT THE LINE  C = ...  IN THE BOX BELOW <<<
+
+%% ===================== YOUR CONTROLLER: EDIT HERE =====================
+s = tf('s');
+C = 3000*(s+2)/(s+5);   % <-- type your controller C(s) here
+%% ======================================================================
+% (default: lead compensator from HA_Control_Design.m)
+% The controller sees the error e = 0 - theta (r = 0, upright) and
+% produces the torque on the pole u = C(s) e.
 
 %% Parameters (edit freely, same values as HA_Control_Design.m)
 J = 10.4;           % pole inertia [kg m^2]
@@ -31,10 +41,6 @@ uHumanMax = 600;    % torque at full stick / full mouse deflection [N m]
 uCtrlMax  = 3000;   % controller saturation [N m]
 distScale = 0.3;    % your input is scaled by this in CONTROLLER mode (disturbance)
 
-% Controller: write any proper transfer function in s.
-% Error e = 0 - theta, pole torque u = C(s) e.
-s = tf('s');
-C = 3000*(s+2)/(s+5);   % lead compensator from HA_Control_Design.m
 [numC, denC] = tfdata(C, 'v');
 
 %% Plant (same equations as the HA_sim.slx subsystem), state x = [theta; theta'; psi; psi']
