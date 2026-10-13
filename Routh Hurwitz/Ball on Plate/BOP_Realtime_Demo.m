@@ -46,9 +46,9 @@ tol = 0.015;        % "on target" radius [m]
 % Each axis: x'' = c sin(theta),  tau theta'' + theta' = K V
 % (linearized: X(s)/Theta(s) = c/s^2, Theta(s)/V(s) = K/(s(tau s + 1)))
 
-[numC, denC] = tfdata(tf(C), 'v');
-[Ac, Bc, Cc, Dc] = localTf2ss(numC, denC);
-nc = size(Ac, 1);
+srcFile = [mfilename('fullpath') '.m'];   % Reset re-reads C from this file
+Ac = []; Bc = []; Cc = []; Dc = 0; nc = 0;
+setController(C);
 
 %% State: per axis [position; velocity; servo angle; servo speed]
 X = zeros(4, 2);    % columns: x axis, y axis
@@ -125,6 +125,7 @@ fig.WindowButtonMotionFcn = @mouseMove;
 reset();
 carry = 0;
 tFrame = tic;
+frameTime = 1/30;                     % redraw at ~30 fps
 while isvalid(fig)
     dWall = min(toc(tFrame), 0.05);  % wall time since last frame (capped)
     tFrame = tic;
@@ -140,8 +141,9 @@ while isvalid(fig)
         carry = 0;
     end
     draw(human);
-    drawnow limitrate
-    pause(0.005);
+    drawnow                           % wait until the frame is rendered, so
+                                      % button presses do not queue up behind it
+    pause(max(0.001, frameTime - toc(tFrame)));   % idle rest of frame, run callbacks
 end
 
 %% Nested functions
@@ -276,7 +278,20 @@ end
         end
     end
 
+    function setController(Cnew)
+        [numC, denC] = tfdata(tf(Cnew), 'v');
+        [Ac, Bc, Cc, Dc] = localTf2ss(numC, denC);
+        nc = size(Ac, 1);
+    end
+
     function reset()
+        % Re-read the controller C(s) from the box at the top of this file
+        % (unsaved edits in the Editor included), then restart.
+        try
+            setController(localReadController(srcFile));
+        catch err
+            uialert(fig, err.message, 'Controller not updated (using previous C)');
+        end
         X = zeros(4, 2); X(1, :) = [0.03 -0.02];
         XC = zeros(nc, 2);
         fallen = false;
@@ -319,6 +334,24 @@ end
             mouseIn = max(min([(q(1) - w/2)/(w/2), (q(2) - hgt/2)/(hgt/2)]*1.5, 1), -1);
         end
     end
+end
+
+function C = localReadController(file)
+% Evaluate the YOUR CONTROLLER block of this file and return C.
+txt = '';
+try   % use the Editor's text, if open, so the file need not be saved
+    doc = matlab.desktop.editor.findOpenDocument(file);
+    if ~isempty(doc), txt = doc.Text; end
+catch
+end
+if isempty(txt), txt = fileread(file); end
+i1 = strfind(txt, 'YOUR CONTROLLER: EDIT HERE');
+i1 = i1(1) + find(txt(i1(1):end) == newline, 1);   % first line of the block
+i2 = i1 - 1 + strfind(txt(i1:end), '%% ====');      % closing line of the block
+eval(txt(i1:i2(1) - 1));                            % defines s and C
+if ~exist('C', 'var')
+    error('The controller block must define C.');
+end
 end
 
 function [A, B, C, D] = localTf2ss(num, den)

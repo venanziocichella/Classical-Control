@@ -41,7 +41,7 @@ uHumanMax = 10;     % force at full stick / full mouse deflection [N]
 uCtrlMax  = 30;     % controller saturation [N]
 distScale = 0.3;    % your input is scaled by this in CONTROLLER mode (disturbance)
 
-[numC, denC] = tfdata(C, 'v');
+srcFile = [mfilename('fullpath') '.m'];   % Reset re-reads C from this file
 
 %% Plant, state x = [theta; theta'; cart position; cart velocity]
 % theta is measured from the upward vertical, positive to the right:
@@ -50,8 +50,8 @@ distScale = 0.3;    % your input is scaled by this in CONTROLLER mode (disturban
 % (linearization: G(s) as in IPC_Control_Design.m)
 plant = @(x, u) cartPendulum(x, u, M, m, l, I, mu, g);
 
-[Ac, Bc, Cc, Dc] = localTf2ss(numC, denC);
-nc = size(Ac, 1);
+Ac = []; Bc = []; Cc = []; Dc = 0; nc = 0;
+setController(C);
 
 %% State
 x = [theta0; 0; 0; 0];   % [theta; theta_dot; y; y_dot]
@@ -148,6 +148,7 @@ fig.WindowButtonMotionFcn = @mouseMove;
 reset();
 u = 0; carry = 0;
 tFrame = tic;
+frameTime = 1/30;                     % redraw at ~30 fps
 while isvalid(fig)
     dWall = min(toc(tFrame), 0.1);   % wall time since last frame (capped)
     tFrame = tic;
@@ -163,8 +164,9 @@ while isvalid(fig)
         carry = 0;
     end
     draw(u, human);
-    drawnow limitrate
-    pause(0.005);
+    drawnow                           % wait until the frame is rendered, so
+                                      % button presses do not queue up behind it
+    pause(max(0.001, frameTime - toc(tFrame)));   % idle rest of frame, run callbacks
 end
 
 %% Nested functions
@@ -306,7 +308,20 @@ end
         end
     end
 
+    function setController(Cnew)
+        [numC, denC] = tfdata(tf(Cnew), 'v');
+        [Ac, Bc, Cc, Dc] = localTf2ss(numC, denC);
+        nc = size(Ac, 1);
+    end
+
     function reset()
+        % Re-read the controller C(s) from the box at the top of this file
+        % (unsaved edits in the Editor included), then restart.
+        try
+            setController(localReadController(srcFile));
+        catch err
+            uialert(fig, err.message, 'Controller not updated (using previous C)');
+        end
         x = [theta0; 0; 0; 0];
         xc = zeros(nc, 1);
         fallen = false;
@@ -354,6 +369,24 @@ Mm = [M+m, m*l*c; m*l*c, I+m*l^2];
 rhs = [u - mu*x(4) + m*l*sn*x(2)^2; m*g*l*sn];
 a = Mm \ rhs;    % [y''; theta'']
 dx = [x(2); a(2); x(4); a(1)];
+end
+
+function C = localReadController(file)
+% Evaluate the YOUR CONTROLLER block of this file and return C.
+txt = '';
+try   % use the Editor's text, if open, so the file need not be saved
+    doc = matlab.desktop.editor.findOpenDocument(file);
+    if ~isempty(doc), txt = doc.Text; end
+catch
+end
+if isempty(txt), txt = fileread(file); end
+i1 = strfind(txt, 'YOUR CONTROLLER: EDIT HERE');
+i1 = i1(1) + find(txt(i1(1):end) == newline, 1);   % first line of the block
+i2 = i1 - 1 + strfind(txt(i1:end), '%% ====');      % closing line of the block
+eval(txt(i1:i2(1) - 1));                            % defines s and C
+if ~exist('C', 'var')
+    error('The controller block must define C.');
+end
 end
 
 function [A, B, C, D] = localTf2ss(num, den)
