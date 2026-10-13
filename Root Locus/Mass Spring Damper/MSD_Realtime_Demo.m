@@ -35,14 +35,14 @@ yLabel = 'position [m]'; yScale = 1;
 figName = 'Mass Spring Damper: closed-loop simulation';
 
 %% ============== Simulation engine (no need to edit below) ==============
-[numC, denC] = tfdata(tf(C), 'v');
-[Ac, Bc, Cc, Dc] = localTf2ss(numC, denC);
-nc = size(Ac, 1);
+srcFile = [mfilename('fullpath') '.m'];   % Reset re-reads C from this file
+Ac = []; Bc = []; Cc = []; Dc = 0; nc = 0;
+setController(C);
 x = x0; xc = zeros(nc, 1); t = 0; u = 0; r = rOf(0);
 d = 0; dUntil = -1;              % current disturbance and when it ends
 paused = false; stopped = false; speed = 1; dt = 1e-3;
 sc = struct();                   % graphics handles of the animation
-nH = 3000; tHist = nan(1, nH); yHist = tHist; rHist = tHist; kHist = 0;
+nH = 600; tHist = nan(1, nH); yHist = tHist; rHist = tHist; kHist = 0;
 
 fig = uifigure('Name', figName, 'Position', [100 100 1000 650], 'Color', 'w');
 gl = uigridlayout(fig, [2 2]);
@@ -85,6 +85,7 @@ fig.WindowKeyPressFcn = @keyPress;
 %% Real-time loop
 reset();
 carry = 0; tFrame = tic;
+frameTime = 1/30;                     % redraw at ~30 fps
 while isvalid(fig)
     dWall = min(toc(tFrame), 0.05);   % wall time since last frame (capped)
     tFrame = tic;
@@ -104,8 +105,9 @@ while isvalid(fig)
         carry = 0;
     end
     draw();
-    drawnow limitrate
-    pause(0.005);
+    drawnow                           % wait until the frame is rendered, so
+                                      % button presses do not queue up behind it
+    pause(max(0.001, frameTime - toc(tFrame)));   % idle rest of frame, run callbacks
 end
 
 %% Engine functions
@@ -152,7 +154,20 @@ end
         dt = 1e-3*max(1, speed/2);   % larger steps when running fast
     end
 
+    function setController(Cnew)
+        [numC, denC] = tfdata(tf(Cnew), 'v');
+        [Ac, Bc, Cc, Dc] = localTf2ss(numC, denC);
+        nc = size(Ac, 1);
+    end
+
     function reset()
+        % Re-read the controller C(s) from the box at the top of this file
+        % (unsaved edits in the Editor included), then restart.
+        try
+            setController(localReadController(srcFile));
+        catch err
+            uialert(fig, err.message, 'Controller not updated (using previous C)');
+        end
         x = x0; xc = zeros(nc, 1); t = 0; r = rOf(0); d = 0; dUntil = -1;
         stopped = false;
         kHist = 0; tHist(:) = NaN; yHist(:) = NaN; rHist(:) = NaN;
@@ -212,6 +227,24 @@ end
             sc.arrow.XData = NaN; sc.arrow.YData = NaN;
         end
     end
+end
+
+function C = localReadController(file)
+% Evaluate the YOUR CONTROLLER block of this file and return C.
+txt = '';
+try   % use the Editor's text, if open, so the file need not be saved
+    doc = matlab.desktop.editor.findOpenDocument(file);
+    if ~isempty(doc), txt = doc.Text; end
+catch
+end
+if isempty(txt), txt = fileread(file); end
+i1 = strfind(txt, 'YOUR CONTROLLER: EDIT HERE');
+i1 = i1(1) + find(txt(i1(1):end) == newline, 1);   % first line of the block
+i2 = i1 - 1 + strfind(txt(i1:end), '%% ====');      % closing line of the block
+eval(txt(i1:i2(1) - 1));                            % defines s and C
+if ~exist('C', 'var')
+    error('The controller block must define C.');
+end
 end
 
 function [A, B, C, D] = localTf2ss(num, den)
