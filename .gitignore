@@ -1,0 +1,11 @@
+# MATLAB / Simulink generated files
+slprj/
+*.slxc
+*.asv
+*.autosave
+*.bak
+*.slx.r20*
+*.mdl.r20*
+*.mex*
+codegen/
+.DS_Store
