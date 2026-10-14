@@ -11,7 +11,7 @@ function MSD_Realtime_Demo
 
 %% ===================== YOUR CONTROLLER: EDIT HERE =====================
 s = tf('s');
-C = 100*(1 + 3/s);                    % <-- type your controller C(s) here
+C = 800*(1 + 0/s);                    % <-- type your controller C(s) here
 %% ======================================================================
 % The controller sees the error e = r - x (target minus position) and
 % produces the force u = C(s) e.

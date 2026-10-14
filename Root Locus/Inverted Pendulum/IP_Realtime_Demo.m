@@ -11,6 +11,8 @@ function IP_Realtime_Demo
 %% ===================== YOUR CONTROLLER: EDIT HERE =====================
 s = tf('s');
 C = 11.8*(1 + 0.2*s + 0.05/s)/(s/100+1);   % <-- type your controller C(s) here
+Kp = 1; Kd = 0.1; K = 390; 
+C = K*(Kp+Kd*s);
 %% ======================================================================
 % The controller sees the error e = r - theta (r = 0, upright) and
 % produces the control input u = C(s) e.
