@@ -249,12 +249,19 @@ end
 end
 
 function [A, B, C, D] = localTf2ss(num, den)
-% Controllable canonical realization of a proper transfer function.
+% Controllable canonical realization of C(s). tfdata(...,'v') pads num and
+% den with leading zeros to the same length (e.g. Kp + Kd*s gives
+% den = [0 1]), so strip them first. An improper C(s), such as an ideal PD,
+% cannot be simulated as is: roll-off poles 1/(s/100+1) are added.
+num = num(find(num, 1):end); den = den(find(den, 1):end);
+if isempty(num), num = 0; end
+nExtra = numel(num) - numel(den);
+if nExtra > 0
+    warning('C(s) is improper: simulating C(s)/(s/100+1)^%d instead.', nExtra);
+    for k = 1:nExtra, den = conv(den, [0.01 1]); end
+end
 num = num(:).'/den(1); den = den(:).'/den(1);
 n = numel(den) - 1;
-if numel(num) > n + 1
-    error('The controller C(s) must be proper (numerator degree <= denominator degree).');
-end
 num = [zeros(1, n + 1 - numel(num)) num];
 D = num(1);
 r = num - D*den;                 % strictly proper remainder
