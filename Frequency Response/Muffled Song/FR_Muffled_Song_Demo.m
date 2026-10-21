@@ -1,8 +1,9 @@
 function FR_Muffled_Song_Demo
 %FR_MUFFLED_SONG_DEMO  Hear a Bode plot: play a song through G(s) in real time.
 %
-%   Run FR_Muffled_Song_Demo. A drum'n'bass / jungle track (synthesized by
-%   FR_Make_Jungle_Track, or your own song) plays in a loop through
+%   Run FR_Muffled_Song_Demo and press Play (or Space). A drum'n'bass /
+%   jungle track (synthesized by FR_Make_Jungle_Track, or your own song)
+%   plays in a loop through
 %       low-pass   G(s) = 1/(tau s + 1)
 %       high-pass  G(s) = tau s/(tau s + 1)
 %       resonant   G(s) = wn^2/(s^2 + 2 zeta wn s + wn^2)
@@ -37,7 +38,7 @@ blue = [31 95 168]/255; red = [192 57 43]/255; gray = [0.6 0.6 0.6];
 
 %% State
 mode = 'low'; fcT = fc0; fcCur = fc0; zeta = zeta0;
-bypass = false; vol = 0.8; playing = true; stopped = false;
+bypass = false; vol = 0.8; playing = false; stopped = false;   % wait for Play
 frame = 1024; pos = 1;
 [b, a] = FR_Filter_Coeffs(mode, fcCur, zeta, fs); zi = zeros(max(numel(a), numel(b)) - 1, 1);
 wMix = 1; gLim = 1;                       % filtered/original mix and limiter gain
@@ -106,7 +107,7 @@ cbBy = uicheckbox(pn, 'Text', 'Bypass: play the original  (B)', 'FontSize', 14, 
 uilabel(pn, 'Text', 'Volume', 'FontWeight', 'bold', 'FontSize', 14);
 uislider(pn, 'Limits', [0 1.5], 'Value', vol, 'MajorTicks', [0 0.5 1 1.5], ...
          'ValueChangingFcn', @(~, ev) setVol(ev.Value), 'ValueChangedFcn', @(src, ~) setVol(src.Value));
-btPlay = uibutton(pn, 'Text', 'Pause  (Space)', 'FontSize', 14, 'ButtonPushedFcn', @(~, ~) togglePlay());
+btPlay = uibutton(pn, 'Text', 'Play  (Space)', 'FontSize', 14, 'ButtonPushedFcn', @(~, ~) togglePlay());
 uibutton(pn, 'Text', 'Reset song  (R)', 'FontSize', 14, 'ButtonPushedFcn', @(~, ~) restartSong());
 uibutton(pn, 'Text', 'Load song...', 'FontSize', 14, 'ButtonPushedFcn', @(~, ~) pickSong());
 lblSong = uilabel(pn, 'Text', '', 'WordWrap', 'on', 'FontColor', [0.35 0.35 0.35]);
@@ -204,6 +205,9 @@ if isvalid(fig), delete(fig); end
             release(writer); writer = audioDeviceWriter('SampleRate', fs2, 'BufferSize', frame);
         end
         song = s2; fs = fs2; songName = nm; pos = 1;
+        if playing, togglePlay(); end                % new song: wait for Play
+        if ~isempty(player), player.StopFcn = []; stop(player); player = []; end
+        bufIn(:) = 0; bufOut(:) = 0; specIn(:) = -100; specOut(:) = -100;
         fAx = (0:nfft/2-1)'*fs/nfft; set([hIn hOut], 'XData', fAx(2:end));
         setMode(mode);
     end

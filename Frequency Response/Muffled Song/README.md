@@ -20,6 +20,8 @@ the sub-bass stays. The song sounds as if it were playing behind a wall.
 FR_Muffled_Song_Demo
 ```
 
+The demo opens paused: press **Play** (or `Space`) to start the song. After **Load song...** it is paused again at the start of the new song, until you press Play.
+
 - **Filter**: low-pass `1/(τs+1)`, high-pass `τs/(τs+1)`, or resonant
   `ωn²/(s²+2ζωn s+ωn²)` (with a ζ slider).
 - **Corner frequency** `fc = 1/(2πτ)`: log slider from 50 Hz to 15 kHz,
