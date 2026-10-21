@@ -77,3 +77,16 @@ to frame, so the output is continuous. When the slider moves, the corner
 frequency glides to the new value on a logarithmic scale over a few frames,
 and the coefficients are recomputed every frame. Bypass is a short crossfade.
 None of these changes produce clicks.
+
+## Troubleshooting
+
+- **"A given audio device may only be opened once."** This happened when the demo
+  was stopped from MATLAB (the Stop button or Ctrl+C) while its window was still
+  open. The window kept the audio device open, and `clear all` cannot release it.
+  The demo now handles this itself. When you run it, it first closes any window
+  left over from a previous run and frees the audio device. Just run
+  `FR_Muffled_Song_Demo` again. Closing the leftover window also frees the device.
+- Songs with a sample rate other than the audio device's (e.g. 48 kHz) are
+  resampled when loaded, so the device is never reopened.
+- If the audio device cannot be opened at all (another program holds it), the
+  demo falls back to `audioplayer` and says so in the control panel.

@@ -26,6 +26,8 @@ zeta0    = 0.1;         % initial damping ratio (resonant mode)
 %% ===============================================================
 
 here = fileparts(mfilename('fullpath'));
+appTag = 'FR_Muffled_Song_Demo';
+freeStale(appTag);          % release the audio device and close a window left by a previous run
 [song, fs, songName] = loadSong(songFile);
 
 % Real-time audio needs the Audio Toolbox (audioDeviceWriter). Without it
@@ -48,7 +50,7 @@ fAx = (0:nfft/2-1)'*fs/nfft; specIn = -100*ones(nfft/2, 1); specOut = specIn;
 player = []; needRender = true; writer = []; yRender = []; yMix = []; inLoop = false;
 
 %% UI
-fig = uifigure('Name', 'Frequency Response: the muffled song', 'Position', [80 80 1180 700], ...
+fig = uifigure('Name', 'Frequency Response: the muffled song', 'Position', [80 80 1180 700], 'Tag', appTag, ...
                'Color', 'w', 'WindowKeyPressFcn', @onKey, 'CloseRequestFcn', @onClose);
 gl = uigridlayout(fig, [2 2]); gl.ColumnWidth = {'1x', 280}; gl.RowHeight = {'1x', '1x'};
 
@@ -119,10 +121,20 @@ refreshUI();
 
 %% Audio engine
 if realtime
-    writer = audioDeviceWriter('SampleRate', fs, 'BufferSize', frame);
+    writer = openWriter(fs, frame, appTag);
+    if isempty(writer)
+        realtime = false; uilabel(pn, 'Text', 'Audio device busy: using the fallback player.', 'WordWrap', 'on');
+    end
 end
+setappdata(fig, 'writer', writer); setappdata(groot, [appTag '_writer'], writer);
+% If this loop is stopped from MATLAB (Stop button, Ctrl+C) the window and
+% the open audio device survive; the next run frees them (freeStale), and
+% closing the window frees them too (onClose checks the heartbeat 'beat').
+setappdata(fig, 'beat', tic);
 inLoop = true;
+try
 while ~stopped && isvalid(fig)
+    setappdata(fig, 'beat', tic);
     if ~playing
         if ~realtime && ~isempty(player) && isplaying(player), pause(player); end
         pause(0.05); continue
@@ -155,6 +167,10 @@ while ~stopped && isvalid(fig)
     end
     updateSpectrum();
     drawnow limitrate;
+end
+catch err
+    inLoop = false; cleanup(); if isvalid(fig), delete(fig); end
+    rethrow(err);
 end
 inLoop = false;
 cleanup();
@@ -194,6 +210,10 @@ if isvalid(fig), delete(fig); end
         end
     end
     function togglePlay()
+        if toc(getappdata(fig, 'beat')) > 3     % the audio loop is not running
+            uialert(fig, ['Playback was stopped from MATLAB. Run FR_Muffled_Song_Demo ' ...
+                          'again (this window will be replaced).'], 'Demo stopped'); return
+        end
         playing = ~playing;
         if playing, btPlay.Text = 'Pause  (Space)'; else, btPlay.Text = 'Play  (Space)'; end
     end
@@ -202,7 +222,9 @@ if isvalid(fig), delete(fig); end
         if isequal(f, 0), return; end
         [s2, fs2, nm] = loadSong(fullfile(p, f));
         if fs2 ~= fs && realtime
-            release(writer); writer = audioDeviceWriter('SampleRate', fs2, 'BufferSize', frame);
+            % keep the audio device open at its rate: resample the song instead
+            s2 = interp1((0:numel(s2)-1)'/fs2, s2, (0:floor((numel(s2)-1)*fs/fs2))'/fs, 'pchip');
+            fs2 = fs;
         end
         song = s2; fs = fs2; songName = nm; pos = 1;
         if playing, togglePlay(); end                % new song: wait for Play
@@ -224,9 +246,10 @@ if isvalid(fig), delete(fig); end
         end
     end
     function onClose(~, ~)
-        % the audio loop notices this, releases the device and closes the window
+        % if the audio loop is running it notices this, releases the device and
+        % closes the window; if it is not running (stopped from MATLAB) do it here
         stopped = true;
-        if ~inLoop, cleanup(); delete(fig); end
+        if ~inLoop || toc(getappdata(fig, 'beat')) > 1, cleanup(); delete(fig); end
     end
 
 %% ------------------------------------------------------------ helpers
@@ -271,7 +294,7 @@ if isvalid(fig), delete(fig); end
         yRender = vol*yMix; pk = max(abs(yRender));
         if pk > 0.98, yRender = 0.98*yRender/pk; end
         k = 1; if ~isempty(player), k = player.CurrentSample; stop(player); end
-        player = audioplayer(yRender, fs);
+        player = audioplayer(yRender, fs); setappdata(fig, 'player', player);
         player.StopFcn = @(~, ~) restart();
         play(player, max(1, min(k, numel(yRender))));
     end
@@ -279,7 +302,7 @@ if isvalid(fig), delete(fig); end
         if ~stopped && playing && ~needRender && ~isempty(player) && isvalid(fig), play(player, 1); end
     end
     function cleanup()
-        if ~isempty(writer), release(writer); writer = []; end
+        if ~isempty(writer), try, release(writer); catch, end, writer = []; end
         if ~isempty(player), player.StopFcn = []; stop(player); end
     end
 
@@ -312,4 +335,37 @@ end
 
 function s = fmtTau(t)
 if t >= 1e-3, s = sprintf('%.3g ms', 1e3*t); else, s = sprintf('%.3g µs', 1e6*t); end
+end
+
+function freeStale(appTag)
+% Release the audio device and close the window of a previous run, even if
+% that run was interrupted (Stop button, Ctrl+C) and `clear all` was used.
+w = getappdata(groot, [appTag '_writer']);
+if ~isempty(w) && isvalid(w), try, release(w); catch, end, end
+old = findall(groot, 'Type', 'figure', 'Tag', appTag);
+for k = 1:numel(old)
+    w = getappdata(old(k), 'writer');
+    if ~isempty(w) && isvalid(w), try, release(w); catch, end, end
+    p = getappdata(old(k), 'player');
+    if ~isempty(p), try, stop(p); catch, end, end
+    delete(old(k));
+end
+end
+
+function w = openWriter(fs, frame, appTag)
+% Open the audio device; if a stale writer still holds it, free it and retry once.
+for attempt = 1:2
+    try
+        w = audioDeviceWriter('SampleRate', fs, 'BufferSize', frame);
+        setup(w, zeros(frame, 1));
+        return
+    catch err
+        if attempt == 1 && contains(err.message, 'opened once')
+            freeStale(appTag); pause(0.2);
+        else
+            warning('FR_Muffled_Song_Demo:audio', 'Cannot open the audio device (%s). Using audioplayer instead.', err.message);
+            w = []; return
+        end
+    end
+end
 end
