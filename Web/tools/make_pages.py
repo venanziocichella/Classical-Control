@@ -124,6 +124,10 @@ HOME_CHAPTERS = [   # (repo folder, browser demo folder)
     ('Routh Hurwitz', 'routh-hurwitz'), ('Root Locus', 'root-locus'),
     ('Frequency Response', 'frequency-response'), ('Bode Plots', None),
 ]
+HIDE = {   # files kept in the repo but not listed on the course home
+    'Root Locus/Mass Spring Damper/MSD_sim.slx', 'Root Locus/Mass Spring Damper/MSD_Control_Design.pdf',
+    'Root Locus/Inverted Pendulum/IP_Control_Design.pdf',
+}
 FR_FOLDER = {'Servo (First Order)': 'servo', 'Spring Damper (High Pass)': 'spring-damper',
              'Mass Spring Damper (Second Order)': 'mass-spring-damper', 'Muffled Song': 'muffled-song'}
 
@@ -135,6 +139,9 @@ def home():
     def files(folder):
         out = []
         for f in sorted(p for p in folder.iterdir() if p.is_file() and not p.name.startswith('.')):
+            rel = f.relative_to(REPO).as_posix()
+            if rel in HIDE or (f.name == 'README.md' and rel.startswith('Frequency Response/')):
+                continue
             href = GITHUB + url(f) if f.suffix == '.md' else url(f)
             out.append(f'<li><a href="{href}">{html.escape(f.name)}</a></li>')
         return '<ul class="hm-files">' + ''.join(out) + '</ul>' if out else ''
