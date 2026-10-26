@@ -7,12 +7,11 @@ function SAT_Realtime_Demo
 %   the buttons (or the Left/Right arrow keys) to disturb the satellite.
 %   R = reset, Space = pause.
 %
-%   >>> TO TRY YOUR OWN CONTROLLER, EDIT THE LINE  C = ...  IN THE BOX BELOW <<<
+%   Type your controller C(s) in the box on the right (e.g. 10*(s+2)/(s+5))
+%   and press Enter or Apply. The plant G(s) is shown above the box.
 
-%% ===================== YOUR CONTROLLER: EDIT HERE =====================
-s = tf('s');
-C = 20*(s+1)/(s+10);                  % <-- type your controller C(s) here
-%% ======================================================================
+%% Default controller (change C(s) in the sim window, no need to edit here)
+C0 = '20*(s+1)/(s+10)';               % initial text of the C(s) box
 % The controller sees the error e = r - theta and produces the torque
 % u = C(s) e.
 
@@ -32,19 +31,25 @@ pushNames = {'Thruster pulse CW', 'Thruster pulse CCW'};
 yLabel = 'theta [deg]'; yScale = 180/pi;
 figName = 'Satellite attitude: closed-loop simulation';
 
+% Linear model from u to y, shown in the sim window
+s = tf('s');
+G = 1/(I*s^2);
+Gtext = '1/(I s^2)';
+[numG, denG] = tfdata(G, 'v');
+
 %% ============== Simulation engine (no need to edit below) ==============
-srcFile = [mfilename('fullpath') '.m'];   % Reset re-reads C from this file
 Ac = []; Bc = []; Cc = []; Dc = 0; nc = 0;
-setController(C);
+cInfo = setController(C0);         % text shown under the C(s) box
+typingC = false;                  % true while typing in the C(s) box
 x = x0; xc = zeros(nc, 1); t = 0; u = 0; r = rOf(0);
 d = 0; dUntil = -1;              % current disturbance and when it ends
 paused = false; stopped = false; speed = 1; dt = 1e-3;
 sc = struct();                   % graphics handles of the animation
 nH = 600; tHist = nan(1, nH); yHist = tHist; rHist = tHist; kHist = 0;
 
-fig = uifigure('Name', figName, 'Position', [100 100 1000 650], 'Color', 'w');
+fig = uifigure('Name', figName, 'Position', [100 100 1000 720], 'Color', 'w');
 gl = uigridlayout(fig, [2 2]);
-gl.ColumnWidth = {'1x', 220}; gl.RowHeight = {'2x', '1x'};
+gl.ColumnWidth = {'1x', 260}; gl.RowHeight = {'2x', '1x'};
 
 % Animation
 ax = uiaxes(gl); ax.Layout.Row = 1; ax.Layout.Column = 1;
@@ -65,8 +70,16 @@ rLine = plot(axY, NaN, NaN, 'k--', 'LineWidth', 1);
 yLine = plot(axY, NaN, NaN, 'LineWidth', 1.5, 'Color', [0 0.45 0.74]);
 
 % Control panel
-pn = uigridlayout(gl, [9 1]); pn.Layout.Row = [1 2]; pn.Layout.Column = 2;
-pn.RowHeight = repmat({'fit'}, 1, 9);
+pn = uigridlayout(gl, [15 1]); pn.Layout.Row = [1 2]; pn.Layout.Column = 2;
+pn.RowHeight = repmat({'fit'}, 1, 15);
+pn.Scrollable = 'on';
+uilabel(pn, 'Text', 'Plant G(s)', 'FontWeight', 'bold');
+uilabel(pn, 'WordWrap', 'on', 'Text', {['G(s) = ' Gtext], ['     = ' localTfString(numG, denG)]});
+uilabel(pn, 'Text', 'Controller C(s)', 'FontWeight', 'bold');
+edC = uieditfield(pn, 'text', 'Value', C0, ...
+    'ValueChangingFcn', @(~,~) setTyping(true), 'ValueChangedFcn', @(~,~) applyController());
+uibutton(pn, 'Text', 'Apply C(s)  (Enter)', 'ButtonPushedFcn', @(~,~) applyController());
+lblC = uilabel(pn, 'Text', cInfo, 'WordWrap', 'on', 'FontColor', [0.4 0.4 0.4]);
 uilabel(pn, 'Text', 'Disturbance', 'FontWeight', 'bold');
 uibutton(pn, 'Text', pushNames{1}, 'ButtonPushedFcn', @(~,~) doPush(-1));
 uibutton(pn, 'Text', pushNames{2}, 'ButtonPushedFcn', @(~,~) doPush(1));
@@ -77,7 +90,8 @@ uibutton(pn, 'Text', 'Reset  (R)', 'ButtonPushedFcn', @(~,~) reset());
 uibutton(pn, 'Text', 'Pause  (Space)', 'ButtonPushedFcn', @(~,~) togglePause());
 lblT = uilabel(pn, 'Text', 't = 0.0 s', 'FontSize', 14);
 uilabel(pn, 'WordWrap', 'on', 'FontColor', [0.4 0.4 0.4], 'Text', ...
-    ['To try your controller, edit the line  C = ...  at the top of ' mfilename '.m']);
+    ['C(s) is typed in terms of s, e.g. 10*(s+2)/(s+5). The controller sees ' ...
+     'the error e = r - y and outputs u = C(s) e.']);
 fig.WindowKeyPressFcn = @keyPress;
 
 %% Real-time loop
@@ -152,20 +166,36 @@ end
         dt = 1e-3*max(1, speed/2);   % larger steps when running fast
     end
 
-    function setController(Cnew)
-        [numC, denC] = tfdata(tf(Cnew), 'v');
-        [Ac, Bc, Cc, Dc] = localTf2ss(numC, denC);
+    function info = setController(str)
+        % Build the state-space realization of the C(s) typed in the box.
+        [numC, denC] = localParseController(str);
+        [Ac, Bc, Cc, Dc, nExtra] = localTf2ss(numC, denC);
         nc = size(Ac, 1);
+        info = ['Simulating C(s) = ' localTfString(numC, denC)];
+        if nExtra > 0
+            info = sprintf('%s  (improper: times 1/(s/100+1)^%d)', info, nExtra);
+        end
+    end
+
+    function applyController()
+        % Read C(s) from the box and restart the simulation with it.
+        typingC = false;
+        try
+            cInfo = setController(edC.Value);
+        catch err
+            uialert(fig, err.message, 'Controller not updated (using previous C)');
+            return
+        end
+        lblC.Text = cInfo;
+        reset();
+    end
+
+    function setTyping(v)
+        typingC = v;   % hot keys are off while typing C(s)
     end
 
     function reset()
-        % Re-read the controller C(s) from the box at the top of this file
-        % (unsaved edits in the Editor included), then restart.
-        try
-            setController(localReadController(srcFile));
-        catch err
-            uialert(fig, err.message, 'Controller not updated (using previous C)');
-        end
+        % Restart with the current controller C(s).
         x = x0; xc = zeros(nc, 1); t = 0; r = rOf(0); d = 0; dUntil = -1;
         stopped = false;
         kHist = 0; tHist(:) = NaN; yHist(:) = NaN; rHist(:) = NaN;
@@ -176,6 +206,7 @@ end
     end
 
     function keyPress(~, evt)
+        if typingC, return; end
         switch evt.Key
             case 'leftarrow',  doPush(-1);
             case 'rightarrow', doPush(1);
@@ -219,34 +250,15 @@ end
     end
 end
 
-function C = localReadController(file)
-% Evaluate the YOUR CONTROLLER block of this file and return C.
-txt = '';
-try   % use the Editor's text, if open, so the file need not be saved
-    doc = matlab.desktop.editor.findOpenDocument(file);
-    if ~isempty(doc), txt = doc.Text; end
-catch
-end
-if isempty(txt), txt = fileread(file); end
-i1 = strfind(txt, 'YOUR CONTROLLER: EDIT HERE');
-i1 = i1(1) + find(txt(i1(1):end) == newline, 1);   % first line of the block
-i2 = i1 - 1 + strfind(txt(i1:end), '%% ====');      % closing line of the block
-eval(txt(i1:i2(1) - 1));                            % defines s and C
-if ~exist('C', 'var')
-    error('The controller block must define C.');
-end
-end
-
-function [A, B, C, D] = localTf2ss(num, den)
+function [A, B, C, D, nExtra] = localTf2ss(num, den)
 % Controllable canonical realization of C(s). tfdata(...,'v') pads num and
 % den with leading zeros to the same length (e.g. Kp + Kd*s gives
 % den = [0 1]), so strip them first. An improper C(s), such as an ideal PD,
-% cannot be simulated as is: roll-off poles 1/(s/100+1) are added.
+% cannot be simulated as is: nExtra roll-off poles 1/(s/100+1) are added.
 num = num(find(num, 1):end); den = den(find(den, 1):end);
 if isempty(num), num = 0; end
 nExtra = numel(num) - numel(den);
 if nExtra > 0
-    warning('C(s) is improper: simulating C(s)/(s/100+1)^%d instead.', nExtra);
     for k = 1:nExtra, den = conv(den, [0.01 1]); end
 end
 num = num(:).'/den(1); den = den(:).'/den(1);
@@ -258,4 +270,59 @@ A = [zeros(n - 1, 1) eye(n - 1); -fliplr(den(2:end))];
 B = [zeros(n - 1, 1); 1];
 C = fliplr(r(2:end));
 if n == 0, A = zeros(0); B = zeros(0, 1); C = zeros(1, 0); end
+end
+
+function [num, den] = localParseController(str)
+% C(s) as typed in the sim. Only numbers, s, + - * / ^ and parentheses are
+% accepted (e.g. 10*(s+2)/(s+5)), so the same text also works in a browser
+% version of the demo.
+str = strtrim(char(str));
+rest = regexprep(str, '(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?', '');   % drop the numbers
+if isempty(str) || ~isempty(regexp(rest, '[^s\s+\-*/^().]', 'once'))
+    error('Type C(s) with numbers, s, + - * / ^ and parentheses only, e.g. 10*(s+2)/(s+5)');
+end
+s = tf('s'); %#ok<NASGU> used by eval
+try
+    C = tf(eval(str));
+catch
+    error('Could not read C(s) = %s. Example: 10*(s+2)/(s+5)', str);
+end
+[num, den] = tfdata(C, 'v');
+end
+
+function str = localTfString(num, den)
+% num(s)/den(s) as text, e.g. '1.53 / (0.0248 s^2 + s)'.
+num = num(find(num, 1):end); den = den(find(den, 1):end);
+if isempty(num), str = '0'; return; end
+if numel(den) == 1
+    str = localPolyString(num/den);
+else
+    str = localPolyString(num);
+    if nnz(num) > 1, str = ['(' str ')']; end
+    d = localPolyString(den);
+    if nnz(den) > 1, d = ['(' d ')']; end
+    str = [str ' / ' d];
+end
+end
+
+function str = localPolyString(p)
+% Polynomial coefficients (highest power first) as text, e.g. '2 s^2 - s + 0.5'.
+n = numel(p) - 1; str = '';
+for k = 1:numel(p)
+    a = p(k); e = n - k + 1;
+    if a == 0, continue; end
+    if isempty(str)
+        if a < 0, str = '-'; end
+    elseif a < 0
+        str = [str ' - '];
+    else
+        str = [str ' + '];
+    end
+    a = abs(a);
+    if a ~= 1 || e == 0
+        str = [str sprintf('%.4g', a)];
+        if e > 0, str = [str ' ']; end
+    end
+    if e == 1, str = [str 's']; elseif e > 1, str = sprintf('%ss^%d', str, e); end
+end
 end

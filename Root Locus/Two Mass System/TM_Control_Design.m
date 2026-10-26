@@ -40,8 +40,8 @@ step(minreal(C*G/(1+C*G)));
 % the force acts on mass 1, and mass 2 only feels it through the spring. Try 
 % rlocus(C*k2/den) to see why.
 % 
-% To try this controller in TM_Realtime_Demo, set
+% To try this controller in TM_Realtime_Demo, type this in its C(s) box
 % 
-%   C = 5*(s+1)^2/(s*(s/20+1));
+%   5*(s+1)^2/(s*(s/20+1))
 
 [numC, denC] = tfdata(C, 'v')

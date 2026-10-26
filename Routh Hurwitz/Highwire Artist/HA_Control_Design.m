@@ -50,8 +50,8 @@ C = K*(s+2)/(s+5);
 pole(minreal(C*G/(1+C*G)))
 step(minreal(C*G/(1+C*G)));
 %% 
-% To try this controller in HA_Realtime_Demo, set
+% To try this controller in HA_Realtime_Demo, type this in its C(s) box
 % 
-%   C = 3000*(s+2)/(s+5);
+%   3000*(s+2)/(s+5)
 
 [numC, denC] = tfdata(C, 'v')

@@ -44,8 +44,8 @@ step(minreal(C*G/(1+C*G)));
 % Note that the inflow cannot be negative: if the level is above the target 
 % the controller can only close the valve and wait for the tank to drain.
 % 
-% To try this controller in WT_Realtime_Demo, set
+% To try this controller in WT_Realtime_Demo, type this in its C(s) box
 % 
-%   C = 5*(1 + 0.05/s);
+%   5*(1 + 0.05/s)
 
 [numC, denC] = tfdata(C, 'v')

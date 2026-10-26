@@ -37,8 +37,8 @@ pzplot(minreal(C*G/(1+C*G)));
 step(minreal(C*G/(1+C*G)));
 %% 
 % G already has two poles at the origin, so the steady state error to step 
-% inputs is zero. To try this controller in SAT_Realtime_Demo, set
+% inputs is zero. To try this controller in SAT_Realtime_Demo, type this in its C(s) box
 % 
-%   C = 20*(s+1)/(s+10);
+%   20*(s+1)/(s+10)
 
 [numC, denC] = tfdata(C, 'v')

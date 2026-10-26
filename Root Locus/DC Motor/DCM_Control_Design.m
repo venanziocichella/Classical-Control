@@ -41,6 +41,6 @@ hold off
 C = 10;
 pzplot(minreal(C*G/(1+C*G)));
 %% 
-% To try this controller in DCM_Realtime_Demo, set
+% To try this controller in DCM_Realtime_Demo, type this in its C(s) box
 % 
-%   C = 10;
+%   10

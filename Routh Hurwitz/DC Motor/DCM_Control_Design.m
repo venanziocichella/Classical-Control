@@ -39,8 +39,8 @@ pole(minreal(C*G/(1+C*G)))
 step(minreal(C*G/(1+C*G)));
 %% 
 % G has a pole at the origin, so the steady state error to step inputs is 
-% zero. To try this controller in DCM_Realtime_Demo, set
+% zero. To try this controller in DCM_Realtime_Demo, type this in its C(s) box
 % 
-%   C = 10;
+%   10
 
 [numC, denC] = tfdata(tf(C), 'v')

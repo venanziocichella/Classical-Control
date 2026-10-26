@@ -19,12 +19,11 @@ function BOP_Realtime_Demo
 %   System Toolbox. No Simulink is needed. The joystick is read through the
 %   standard browser Gamepad API inside a uihtml component (R2019b or newer).
 %
-%   >>> TO TRY YOUR OWN CONTROLLER, EDIT THE LINE  C = ...  IN THE BOX BELOW <<<
+%   Type your controller C(s) in the box on the right (e.g. 10*(s+2)/(s+5))
+%   and press Enter or Apply. The plant G(s) is shown above the box.
 
-%% ===================== YOUR CONTROLLER: EDIT HERE =====================
-s = tf('s');
-C = 3*(s+1)/(s/20+1);                 % <-- type your controller C(s) here
-%% ======================================================================
+%% Default controller (change C(s) in the sim window, no need to edit here)
+C0 = '3*(s+1)/(s/20+1)';              % initial text of the C(s) box
 % (default: PD with filter from BOP_Control_Design.m)
 % The same controller is used for the x and y axes. It sees the error
 % e = r - x (target minus ball position, in m) and produces the servo
@@ -46,9 +45,15 @@ tol = 0.015;        % "on target" radius [m]
 % Each axis: x'' = c sin(theta),  tau theta'' + theta' = K V
 % (linearized: X(s)/Theta(s) = c/s^2, Theta(s)/V(s) = K/(s(tau s + 1)))
 
-srcFile = [mfilename('fullpath') '.m'];   % Reset re-reads C from this file
+% Linear model from u to y, shown in the sim window
+s = tf('s');
+G = c/s^2*Kp1*K/(tau*s^2 + s + Kp1*K);
+Gtext = 'c/s^2 * Kp1 K/(tau s^2 + s + Kp1 K)  (ball and servo loop)';
+[numG, denG] = tfdata(G, 'v');
+
 Ac = []; Bc = []; Cc = []; Dc = 0; nc = 0;
-setController(C);
+cInfo = setController(C0);         % text shown under the C(s) box
+typingC = false;                  % true while typing in the C(s) box
 
 %% State: per axis [position; velocity; servo angle; servo speed]
 X = zeros(4, 2);    % columns: x axis, y axis
@@ -64,7 +69,7 @@ thRef = [0 0];
 
 %% UI
 fig = uifigure('Name', 'Ball on Plate: Human vs Controller', ...
-    'Position', [100 100 1000 650], 'Color', 'w');
+    'Position', [100 100 1000 720], 'Color', 'w');
 gl = uigridlayout(fig, [1 2]);
 gl.ColumnWidth = {'1x', 260};
 
@@ -89,8 +94,16 @@ msg = text(ax, 0, 0.17, '', 'HorizontalAlignment', 'center', 'FontSize', 18, ...
     'FontWeight', 'bold', 'Color', [0.8 0 0]);
 
 % Control panel
-pn = uigridlayout(gl, [14 1]);
-pn.RowHeight = [repmat({'fit'}, 1, 13) {20}];
+pn = uigridlayout(gl, [20 1]);
+pn.RowHeight = [repmat({'fit'}, 1, 19) {20}];
+pn.Scrollable = 'on';
+uilabel(pn, 'Text', 'Plant G(s)', 'FontWeight', 'bold');
+uilabel(pn, 'WordWrap', 'on', 'Text', {['G(s) = ' Gtext], ['     = ' localTfString(numG, denG)]});
+uilabel(pn, 'Text', 'Controller C(s)', 'FontWeight', 'bold');
+edC = uieditfield(pn, 'text', 'Value', C0, ...
+    'ValueChangingFcn', @(~,~) setTyping(true), 'ValueChangedFcn', @(~,~) applyController());
+uibutton(pn, 'Text', 'Apply C(s)  (Enter)', 'ButtonPushedFcn', @(~,~) applyController());
+lblC = uilabel(pn, 'Text', cInfo, 'WordWrap', 'on', 'FontColor', [0.4 0.4 0.4]);
 uilabel(pn, 'Text', 'Who is in control?', 'FontWeight', 'bold');
 btnHuman = uibutton(pn, 'state', 'Text', 'Human  (H)', 'Value', true, ...
     'ValueChangedFcn', @(~,~) setMode('human'));
@@ -109,11 +122,11 @@ lblJoy = uilabel(pn, 'Text', 'Joystick: press any button', 'WordWrap', 'on');
 lblHelp = uilabel(pn, 'WordWrap', 'on', 'FontColor', [0.4 0.4 0.4], 'Text', ...
     ['Mouse: hold left button; the plate tilts toward the pointer. ' ...
      'Keyboard: arrows. In Controller mode your input is a disturbance.']);
-lblHelp.Layout.Row = 13;
+lblHelp.Layout.Row = 19;
 
 % Joystick reader (hidden web component using the Gamepad API)
 hj = uihtml(pn, 'HTMLSource', localGamepadHTML());
-hj.Layout.Row = 14;
+hj.Layout.Row = 20;
 
 fig.WindowKeyPressFcn = @keyPress;
 fig.WindowKeyReleaseFcn = @keyRelease;
@@ -278,20 +291,37 @@ end
         end
     end
 
-    function setController(Cnew)
-        [numC, denC] = tfdata(tf(Cnew), 'v');
-        [Ac, Bc, Cc, Dc] = localTf2ss(numC, denC);
+    function info = setController(str)
+        % Build the state-space realization of the C(s) typed in the box.
+        [numC, denC] = localParseController(str);
+        [Ac, Bc, Cc, Dc, nExtra] = localTf2ss(numC, denC);
         nc = size(Ac, 1);
+        info = ['Simulating C(s) = ' localTfString(numC, denC)];
+        if nExtra > 0
+            info = sprintf('%s  (improper: times 1/(s/100+1)^%d)', info, nExtra);
+        end
+    end
+
+    function applyController()
+        % Read C(s) from the box and restart the simulation with it.
+        typingC = false;
+        try
+            cInfo = setController(edC.Value);
+        catch err
+            uialert(fig, err.message, 'Controller not updated (using previous C)');
+            return
+        end
+        lblC.Text = cInfo;
+        reset();
+        setMode('controller');
+    end
+
+    function setTyping(v)
+        typingC = v;   % hot keys are off while typing C(s)
     end
 
     function reset()
-        % Re-read the controller C(s) from the box at the top of this file
-        % (unsaved edits in the Editor included), then restart.
-        try
-            setController(localReadController(srcFile));
-        catch err
-            uialert(fig, err.message, 'Controller not updated (using previous C)');
-        end
+        % Restart with the current controller C(s).
         X = zeros(4, 2); X(1, :) = [0.03 -0.02];
         XC = zeros(nc, 2);
         fallen = false;
@@ -304,6 +334,7 @@ end
     end
 
     function keyPress(~, evt)
+        if typingC, return; end
         switch evt.Key
             case 'leftarrow',  keyX = -1;
             case 'rightarrow', keyX = 1;
@@ -336,34 +367,15 @@ end
     end
 end
 
-function C = localReadController(file)
-% Evaluate the YOUR CONTROLLER block of this file and return C.
-txt = '';
-try   % use the Editor's text, if open, so the file need not be saved
-    doc = matlab.desktop.editor.findOpenDocument(file);
-    if ~isempty(doc), txt = doc.Text; end
-catch
-end
-if isempty(txt), txt = fileread(file); end
-i1 = strfind(txt, 'YOUR CONTROLLER: EDIT HERE');
-i1 = i1(1) + find(txt(i1(1):end) == newline, 1);   % first line of the block
-i2 = i1 - 1 + strfind(txt(i1:end), '%% ====');      % closing line of the block
-eval(txt(i1:i2(1) - 1));                            % defines s and C
-if ~exist('C', 'var')
-    error('The controller block must define C.');
-end
-end
-
-function [A, B, C, D] = localTf2ss(num, den)
+function [A, B, C, D, nExtra] = localTf2ss(num, den)
 % Controllable canonical realization of C(s). tfdata(...,'v') pads num and
 % den with leading zeros to the same length (e.g. Kp + Kd*s gives
 % den = [0 1]), so strip them first. An improper C(s), such as an ideal PD,
-% cannot be simulated as is: roll-off poles 1/(s/100+1) are added.
+% cannot be simulated as is: nExtra roll-off poles 1/(s/100+1) are added.
 num = num(find(num, 1):end); den = den(find(den, 1):end);
 if isempty(num), num = 0; end
 nExtra = numel(num) - numel(den);
 if nExtra > 0
-    warning('C(s) is improper: simulating C(s)/(s/100+1)^%d instead.', nExtra);
     for k = 1:nExtra, den = conv(den, [0.01 1]); end
 end
 num = num(:).'/den(1); den = den(:).'/den(1);
@@ -375,6 +387,61 @@ A = [zeros(n - 1, 1) eye(n - 1); -fliplr(den(2:end))];
 B = [zeros(n - 1, 1); 1];
 C = fliplr(r(2:end));
 if n == 0, A = zeros(0); B = zeros(0, 1); C = zeros(1, 0); end
+end
+
+function [num, den] = localParseController(str)
+% C(s) as typed in the sim. Only numbers, s, + - * / ^ and parentheses are
+% accepted (e.g. 10*(s+2)/(s+5)), so the same text also works in a browser
+% version of the demo.
+str = strtrim(char(str));
+rest = regexprep(str, '(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?', '');   % drop the numbers
+if isempty(str) || ~isempty(regexp(rest, '[^s\s+\-*/^().]', 'once'))
+    error('Type C(s) with numbers, s, + - * / ^ and parentheses only, e.g. 10*(s+2)/(s+5)');
+end
+s = tf('s'); %#ok<NASGU> used by eval
+try
+    C = tf(eval(str));
+catch
+    error('Could not read C(s) = %s. Example: 10*(s+2)/(s+5)', str);
+end
+[num, den] = tfdata(C, 'v');
+end
+
+function str = localTfString(num, den)
+% num(s)/den(s) as text, e.g. '1.53 / (0.0248 s^2 + s)'.
+num = num(find(num, 1):end); den = den(find(den, 1):end);
+if isempty(num), str = '0'; return; end
+if numel(den) == 1
+    str = localPolyString(num/den);
+else
+    str = localPolyString(num);
+    if nnz(num) > 1, str = ['(' str ')']; end
+    d = localPolyString(den);
+    if nnz(den) > 1, d = ['(' d ')']; end
+    str = [str ' / ' d];
+end
+end
+
+function str = localPolyString(p)
+% Polynomial coefficients (highest power first) as text, e.g. '2 s^2 - s + 0.5'.
+n = numel(p) - 1; str = '';
+for k = 1:numel(p)
+    a = p(k); e = n - k + 1;
+    if a == 0, continue; end
+    if isempty(str)
+        if a < 0, str = '-'; end
+    elseif a < 0
+        str = [str ' - '];
+    else
+        str = [str ' + '];
+    end
+    a = abs(a);
+    if a ~= 1 || e == 0
+        str = [str sprintf('%.4g', a)];
+        if e > 0, str = [str ' ']; end
+    end
+    if e == 1, str = [str 's']; elseif e > 1, str = sprintf('%ss^%d', str, e); end
+end
 end
 
 function html = localGamepadHTML()

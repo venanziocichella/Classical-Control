@@ -69,8 +69,8 @@ pole(minreal(C*G/(1+C*G)))
 
 step(minreal(G/(1+C*G)), 5);
 %% 
-% To try this controller in IPC_Realtime_Demo, set
+% To try this controller in IPC_Realtime_Demo, type this in its C(s) box
 % 
-%   C = -10*(6 + s + 8/s)/(s/100+1);
+%   -10*(6 + s + 8/s)/(s/100+1)
 
 [numC, denC] = tfdata(C, 'v')

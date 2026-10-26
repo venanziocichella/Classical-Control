@@ -50,8 +50,8 @@ step(minreal(C*G/(1+C*G)));
 % Note that the AC can only cool (P >= 0): it cannot heat the room if the 
 % temperature drops below the target.
 % 
-% To try this controller in CS_Realtime_Demo, set
+% To try this controller in CS_Realtime_Demo, type this in its C(s) box
 % 
-%   C = -2*(s+1)/s;
+%   -2*(s+1)/s
 
 [numC, denC] = tfdata(C, 'v')

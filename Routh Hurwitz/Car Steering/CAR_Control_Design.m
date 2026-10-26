@@ -44,8 +44,8 @@ C = K;
 pole(minreal(C*G/(1+C*G)))
 step(minreal(C*G/(1+C*G)));
 %% 
-% To try this controller in CAR_Realtime_Demo, set
+% To try this controller in CAR_Realtime_Demo, type this in its C(s) box
 % 
-%   C = 2;
+%   2
 
 [numC, denC] = tfdata(tf(C), 'v')

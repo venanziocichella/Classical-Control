@@ -42,6 +42,6 @@ rlocus(-Grev);
 % Now the root locus of a proportional controller always has a branch in the 
 % RHP. This is the non-minimum phase behavior we study in Chapter 12.
 % 
-% To try the forward controller in CAR_Realtime_Demo, set
+% To try the forward controller in CAR_Realtime_Demo, type this in its C(s) box
 % 
-%   C = 2;
+%   2

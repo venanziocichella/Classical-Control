@@ -49,8 +49,8 @@ C = K*(s + a)/s;
 pole(minreal(C*G/(1+C*G)))
 step(minreal(C*G/(1+C*G)));
 %% 
-% To try this controller in MSD_Realtime_Demo, set
+% To try this controller in MSD_Realtime_Demo, type this in its C(s) box
 % 
-%   C = 100*(1 + 3/s);
+%   100*(1 + 3/s)
 
 [numC, denC] = tfdata(C, 'v')

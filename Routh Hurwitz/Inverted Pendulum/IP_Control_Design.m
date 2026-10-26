@@ -59,8 +59,8 @@ step(minreal(C*G/(1+C*G)));
 C = C/(s/100+1);
 pole(minreal(C*G/(1+C*G)))
 %% 
-% To try this controller in IP_Realtime_Demo, set
+% To try this controller in IP_Realtime_Demo, type this in its C(s) box
 % 
-%   C = 11.8*(1 + 0.2*s + 0.05/s)/(s/100+1);
+%   11.8*(1 + 0.2*s + 0.05/s)/(s/100+1)
 
 [numC, denC] = tfdata(C, 'v')
