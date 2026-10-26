@@ -9,3 +9,4 @@ slprj/
 *.mex*
 codegen/
 .DS_Store
+__pycache__/
