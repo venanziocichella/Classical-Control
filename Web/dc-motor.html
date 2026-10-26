@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DC Motor Servo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="sim.css">
+</head>
+<body>
+<header class="cs-head">
+  <h1>DC motor servo</h1>
+  <p>Type a controller C(s) and press Apply. The shaft follows a commanded angle that changes every 2 s.</p>
+</header>
+<div id="app"></div>
+<script src="engine.js"></script>
+<script>
+// DC motor from Chapter 1 with L_a = 0 (ball-on-plate servo values).
+// Same model as DCM_Realtime_Demo.m.
+const K = 1.53;       // steady-state speed gain [rad/(V s)]
+const tau = 0.0248;   // time constant [s]
+const targets = [90, -90, 180, 0, 45, -135].map(a => a * Math.PI / 180);   // [rad]
+
+ControlSim.run({
+  C0: '10',
+  // Plant: tau*omega' + omega = K v, theta' = omega, state x = [theta, omega]
+  plant: (x, u) => [x[1], (K * u - x[1]) / tau],
+  x0: [0, 0],
+  y: x => x[0],
+  r: t => targets[Math.floor(t / 2) % targets.length],
+  uLim: [-10, 10],                   // voltage saturation [V]
+  push: 4, pushTime: 0.3,            // load disturbance as an equivalent voltage [V], [s]
+  pushNames: ['Load torque CW', 'Load torque CCW'],
+  G: { num: [K], den: [tau, 1, 0],
+       text: 'G(s) = K/(s(τs + 1)), K = 1.53 rad/(V s), τ = 0.0248 s. Input: armature voltage v [V], saturated at ±10 V. Output: shaft angle θ.' },
+  yLabel: 'θ [deg]', yScale: 180 / Math.PI,
+  window: 10,
+  sceneLabel: 'motor shaft seen from the front',
+  bounds: [-1.5, 1.5, -1.3, 1.3],
+  drawScene(ctx, s) {
+    const c = s.colors, th = s.x[0];
+    ctx.lineWidth = s.px;
+    // dial
+    ctx.beginPath(); ctx.arc(0, 0, 1.15, 0, 2 * Math.PI);
+    ctx.fillStyle = c.panel; ctx.fill(); ctx.strokeStyle = c.metal; ctx.lineWidth = 2 * s.px; ctx.stroke();
+    ctx.lineWidth = 1.5 * s.px;
+    for (let a = 0; a < 360; a += 30) {
+      const q = a * Math.PI / 180;
+      ctx.beginPath(); ctx.moveTo(1.03 * Math.cos(q), 1.03 * Math.sin(q)); ctx.lineTo(1.15 * Math.cos(q), 1.15 * Math.sin(q)); ctx.stroke();
+    }
+    // commanded angle (dashed)
+    ctx.setLineDash([0.08, 0.06]); ctx.strokeStyle = c.ref; ctx.lineWidth = 3 * s.px;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(1.1 * Math.cos(s.r), 1.1 * Math.sin(s.r)); ctx.stroke();
+    ctx.setLineDash([]);
+    // arm
+    ctx.save(); ctx.rotate(th);
+    ctx.fillStyle = c.part; ctx.strokeStyle = c.fg; ctx.lineWidth = s.px;
+    ctx.beginPath(); ctx.rect(0, -0.07, 1, 0.14); ctx.fill(); ctx.stroke();
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(0, 0, 0.2, 0, 2 * Math.PI); ctx.fillStyle = c.fg; ctx.fill();
+    // load torque arrow
+    if (s.d !== 0) {
+      const dir = Math.sign(s.d), a0 = th + dir * 0.3, a1 = th + dir * 1.2;
+      ctx.strokeStyle = c.alert; ctx.lineWidth = 5 * s.px;
+      ctx.beginPath(); ctx.arc(0, 0, 0.6, a0, a1, dir < 0); ctx.stroke();
+      const hx = 0.6 * Math.cos(a1), hy = 0.6 * Math.sin(a1), tx = -Math.sin(a1) * dir, ty = Math.cos(a1) * dir;
+      ctx.fillStyle = c.alert; ctx.beginPath();
+      ctx.moveTo(hx + 0.12 * tx, hy + 0.12 * ty);
+      ctx.lineTo(hx - 0.08 * Math.cos(a1), hy - 0.08 * Math.sin(a1));
+      ctx.lineTo(hx + 0.08 * Math.cos(a1), hy + 0.08 * Math.sin(a1));
+      ctx.fill();
+    }
+  }
+});
+</script>
+</body>
+</html>
