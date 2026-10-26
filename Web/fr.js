@@ -95,7 +95,7 @@
     ]);
     const card = (c, extra) => el('div', { class: 'fr-card' + (extra ? ' ' + extra : '') }, [c]);
     const stage = el('div', { class: 'fr-card cs-stage' }, [sceneCv, msg]);
-    root.append(el('div', { class: 'fr-grid' }, [stage, card(magCv), panel, card(timeCv), card(phCv)]));
+    root.append(el('div', { class: 'fr-grid' }, [el('div', { class: 'fr-plots' }, [stage, card(magCv), card(timeCv), card(phCv)]), panel]));
     const sctx = CS.setupCanvas(sceneCv), tctx = CS.setupCanvas(timeCv), mctx = CS.setupCanvas(magCv), pctx = CS.setupCanvas(phCv);
 
     // ---- model and simulation ----
