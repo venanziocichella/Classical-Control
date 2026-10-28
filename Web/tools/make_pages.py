@@ -1,6 +1,7 @@
 """Build the browser demos: python3 Web/tools/make_pages.py
 
-Writes Web/routh-hurwitz/*.html, Web/root-locus/*.html,
+Writes Web/routh-hurwitz/*.html, Web/root-locus/*.html, Web/bode/*.html (the
+examples with a Bode design, c0_bd in pages_control.py),
 Web/frequency-response/*.html and Web/index.html from the page definitions in
 pages_control.py and pages_fr.py. The pages load ../engine.js (or ../fr.js)
 and ../sim.css, so the Web folder works as is from a double-click or on a web
@@ -44,6 +45,7 @@ SHELL = """<!doctype html>
 CHAPTERS = [
     ('routh-hurwitz', 'Routh Hurwitz', 'c0_rh'),
     ('root-locus', 'Root Locus', 'c0_rl'),
+    ('bode', 'Bode Plots', 'c0_bd'),   # only the examples that have a Bode design
 ]
 FOLDER = {   # repo folder of each example
     'dc-motor': 'DC Motor', 'car-steering': 'Car Steering', 'cold-storage': 'Cold Storage',
@@ -66,6 +68,8 @@ def write(path, text):
 def main():
     for folder, chapter, key in CHAPTERS:
         for name, p in PAGES.items():
+            if key == 'c0_bd' and key not in p:
+                continue
             pre = ''
             if 'DEFAULT_C' in p['js']:
                 pre = f"\nconst DEFAULT_C = '{p[key]}';   // default C(s) of the {chapter} example"
@@ -89,6 +93,8 @@ def index():
     groups = [
         ('routh-hurwitz', 'Routh Hurwitz', 'Same sims as the MATLAB Realtime demos: type C(s), watch the closed loop, read the closed-loop poles.', PAGES.items()),
         ('root-locus', 'Root Locus', 'The same sims with the Root Locus default controllers.', PAGES.items()),
+        ('bode', 'Bode Plots', 'Chapter 8 designs: lead (DC motor), lag (mass-spring-damper) and lead-lag (pendulum) compensators.',
+         [(n, p) for n, p in PAGES.items() if 'c0_bd' in p]),
         ('frequency-response', 'Frequency Response', 'Chapter 7 demos: what a linear system does to a sinusoid, and a song played through G(s).', FR_PAGES.items()),
     ]
     body = '\n'.join(
@@ -122,7 +128,7 @@ def index():
 # and a link to the browser version of each example that has one.
 HOME_CHAPTERS = [   # (repo folder, browser demo folder)
     ('Routh Hurwitz', 'routh-hurwitz'), ('Root Locus', 'root-locus'),
-    ('Frequency Response', 'frequency-response'), ('Bode Plots', None),
+    ('Frequency Response', 'frequency-response'), ('Bode Plots', 'bode'),
 ]
 HIDE = {   # files kept in the repo but not listed on the course home
     'Root Locus/Mass Spring Damper/MSD_sim.slx', 'Root Locus/Mass Spring Damper/MSD_Control_Design.pdf',

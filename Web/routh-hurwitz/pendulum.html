@@ -17,13 +17,14 @@
 <div id="app"></div>
 <script src="../engine.js"></script>
 <script>
+const DEFAULT_C = '10*(s+2)*(s+3)/(s*(s/100+1))';   // default C(s) of the Routh Hurwitz example
 
 // Damped pendulum from Chapter 1.
 const k = 1, g0 = 9.8, L = 1;   // damping [1/s], gravity [m/s^2], length [m]
 const targets = [30, -30, 60, 0, -45, 15].map(a => a * Math.PI / 180);
 
 ControlSim.run({
-  C0: '10*(s+2)*(s+3)/(s*(s/100+1))',
+  C0: DEFAULT_C,
   plant: (x, u) => [x[1], u - k * x[1] - g0 / L * Math.sin(x[0])],
   x0: [0, 0],
   y: x => x[0],

@@ -11,6 +11,7 @@ PAGES['dc-motor'] = dict(
     title='DC Motor Servo', h1='DC motor servo',
     lead='The shaft follows a commanded angle that changes every 2 s.',
     matlab='DCM_Realtime_Demo.m',
+    c0_rh='10', c0_rl='10', c0_bd='65.4*(0.0211*s+1)/(0.00844*s+1)',
     js=r"""
 // DC motor from Chapter 1 with L_a = 0 (ball-on-plate servo values).
 const K = 1.53;       // steady-state speed gain [rad/(V s)]
@@ -18,7 +19,7 @@ const tau = 0.0248;   // time constant [s]
 const targets = [90, -90, 180, 0, 45, -135].map(a => a * Math.PI / 180);   // [rad]
 
 ControlSim.run({
-  C0: '10',
+  C0: DEFAULT_C,
   // tau*omega' + omega = K v, theta' = omega, state x = [theta, omega]
   plant: (x, u) => [x[1], (K * u - x[1]) / tau],
   x0: [0, 0],
@@ -201,7 +202,7 @@ PAGES['mass-spring-damper'] = dict(
     title='Mass Spring Damper', h1='Mass-spring-damper',
     lead='A force u moves the mass to a target position that changes every 4 s.',
     matlab='MSD_Realtime_Demo.m',
-    c0_rh='100*(1 + 3/s)', c0_rl='800*(1 + 0/s)',
+    c0_rh='100*(1 + 3/s)', c0_rl='800*(1 + 0/s)', c0_bd='760*(s+1)/(7.14*s+1)',
     js=r"""
 // Mass-spring-damper (same values as MSD_Control_Design.m).
 const m = 1, b = 8.8, k = 40;   // [kg], [N s/m], [N/m]
@@ -244,13 +245,15 @@ PAGES['pendulum'] = dict(
     title='Damped Pendulum', h1='Damped pendulum',
     lead='The pendulum hangs from a pivot and is driven to a commanded angle that changes every 4 s.',
     matlab='PEN_Realtime_Demo.m',
+    c0_rh='10*(s+2)*(s+3)/(s*(s/100+1))', c0_rl='10*(s+2)*(s+3)/(s*(s/100+1))',
+    c0_bd='196*(0.268*s+1)/(0.0537*s+1)*(1.667*s+1)/(12.15*s+1)',
     js=r"""
 // Damped pendulum from Chapter 1.
 const k = 1, g0 = 9.8, L = 1;   // damping [1/s], gravity [m/s^2], length [m]
 const targets = [30, -30, 60, 0, -45, 15].map(a => a * Math.PI / 180);
 
 ControlSim.run({
-  C0: '10*(s+2)*(s+3)/(s*(s/100+1))',
+  C0: DEFAULT_C,
   plant: (x, u) => [x[1], u - k * x[1] - g0 / L * Math.sin(x[0])],
   x0: [0, 0],
   y: x => x[0],

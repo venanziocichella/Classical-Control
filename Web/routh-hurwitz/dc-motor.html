@@ -17,6 +17,7 @@
 <div id="app"></div>
 <script src="../engine.js"></script>
 <script>
+const DEFAULT_C = '10';   // default C(s) of the Routh Hurwitz example
 
 // DC motor from Chapter 1 with L_a = 0 (ball-on-plate servo values).
 const K = 1.53;       // steady-state speed gain [rad/(V s)]
@@ -24,7 +25,7 @@ const tau = 0.0248;   // time constant [s]
 const targets = [90, -90, 180, 0, 45, -135].map(a => a * Math.PI / 180);   // [rad]
 
 ControlSim.run({
-  C0: '10',
+  C0: DEFAULT_C,
   // tau*omega' + omega = K v, theta' = omega, state x = [theta, omega]
   plant: (x, u) => [x[1], (K * u - x[1]) / tau],
   x0: [0, 0],
