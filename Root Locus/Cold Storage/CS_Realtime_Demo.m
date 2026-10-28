@@ -11,32 +11,34 @@ function CS_Realtime_Demo
 %   and press Enter or Apply. The plant G(s) is shown above the box.
 
 %% Default controller (change C(s) in the sim window, no need to edit here)
-C0 = '-2*(s+1)/s';                    % initial text of the C(s) box
+C0 = '2*(s+1)/s';                     % initial text of the C(s) box
 % The controller sees the error e = r - T (commanded minus actual
-% temperature) and sets the cooling power P = C(s) e. The AC can only cool,
-% so P cannot be negative.
+% temperature) and sets the input u = C(s) e. By convention the input is
+% minus the cooling power, u = -P. The AC can only cool (P >= 0), so u
+% cannot be positive.
 
 %% Model (Chapter 1, cold storage unit; same values as CS_Control_Design.m)
 h = 1;              % heat transfer constant [1/s]
 Ta = 15;            % ambient temperature [deg C]
-% Plant: T' = -h (T - Ta) - P,  G(s) = -1/(s + h)  (plus the effect of Ta)
-plant = @(x, u) -h*(x(1) - Ta) - u;   % state x = T [deg C]
+% Plant: T' = -h (T - Ta) - P = -h (T - Ta) + u with u = -P,
+% G(s) = 1/(s + h)  (plus the effect of Ta)
+plant = @(x, u) -h*(x(1) - Ta) + u;   % state x = T [deg C]
 x0 = 15;                              % initial temperature after a reset [deg C]
 yOf = @(x) x(1);                      % output: temperature T [deg C]
 targets = [5 0 8 3];                  % commanded temperatures, in order [deg C]
 rOf = @(t) targets(mod(floor(t/6), numel(targets)) + 1);   % new command every 6 s
 isFailed = @(x) false;
 failText = '';
-uLim = [0 40];                        % cooling power limits [min max]
-push = 10; pushTime = 1;              % heat load / extra cooling and its duration [s]
+uLim = [-40 0];                       % input limits [min max] (cooling power P = -u from 0 to 40)
+push = -10; pushTime = 1;             % disturbance on u = -P (door: +10, ice: -10) and its duration [s]
 pushNames = {'Open the door (heat)', 'Add ice (cool)'};
 yLabel = 'temperature [deg C]'; yScale = 1;
 figName = 'Cold storage unit: closed-loop simulation';
 
 % Linear model from u to y, shown in the sim window
 s = tf('s');
-G = -1/(s + h);
-Gtext = '-1/(s + h)';
+G = 1/(s + h);
+Gtext = '1/(s + h)';
 [numG, denG] = tfdata(G, 'v');
 
 %% ============== Simulation engine (no need to edit below) ==============
@@ -248,15 +250,16 @@ end
         sc.ttxt.String = sprintf('%.1f C', T);
         sc.merc.YData = sc.tmap([-5 -5 min(max(T, -5), 20) min(max(T, -5), 20)]);
         sc.ref.YData = sc.tmap([r r]);
-        if d < 0, sc.door.FaceColor = [1 1 0.8]; else, sc.door.FaceColor = [0.75 0.75 0.75]; end
-        n = round(min(u, 40)/5);              % "cold air" lines below the AC
+        if d > 0, sc.door.FaceColor = [1 1 0.8]; else, sc.door.FaceColor = [0.75 0.75 0.75]; end
+        P = -u;                               % cooling power
+        n = round(min(P, 40)/5);              % "cold air" lines below the AC
         xs = []; ys = [];
         for i = 1:n
             xi = -3.5 + 2*i/(n + 1); xs = [xs xi xi NaN]; ys = [ys 4.9 4.2 NaN]; %#ok<AGROW>
         end
         if isempty(xs), xs = NaN; ys = NaN; end
         sc.cold.XData = xs; sc.cold.YData = ys;
-        sc.ptxt.String = sprintf('Cooling power P = %.1f', u);
+        sc.ptxt.String = sprintf('Cooling power P = -u = %.1f', P);
     end
 end
 

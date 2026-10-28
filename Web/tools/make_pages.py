@@ -93,7 +93,7 @@ def index():
     groups = [
         ('routh-hurwitz', 'Routh Hurwitz', 'Same sims as the MATLAB Realtime demos: type C(s), watch the closed loop, read the closed-loop poles.', PAGES.items()),
         ('root-locus', 'Root Locus', 'The same sims with the Root Locus default controllers.', PAGES.items()),
-        ('bode', 'Bode Plots', 'Chapter 8 designs: lead (DC motor), lag (mass-spring-damper) and lead-lag (pendulum) compensators.',
+        ('bode', 'Bode Plots', 'Bode designs: PI (cold storage), lead (DC motor), lag (mass-spring-damper) and lead-lag (pendulum) compensators.',
          [(n, p) for n, p in PAGES.items() if 'c0_bd' in p]),
         ('frequency-response', 'Frequency Response', 'Chapter 7 demos: what a linear system does to a sinusoid, and a song played through G(s).', FR_PAGES.items()),
     ]
