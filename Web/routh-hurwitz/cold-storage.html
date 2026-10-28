@@ -17,8 +17,9 @@
 <div id="app"></div>
 <script src="../engine.js"></script>
 <script>
+const DEFAULT_C = '2*(s+1)/s';   // default C(s) of the Routh Hurwitz example
 
-// Cold storage unit from Chapter 1.
+// Cold storage unit from Chapter 1. Input u = -P (minus the cooling power).
 const h = 1;        // heat transfer constant [1/s]
 const Ta = 15;      // ambient temperature [deg C]
 const targets = [5, 0, 8, 3];   // commanded temperatures [deg C]
@@ -29,16 +30,16 @@ const mix = (a, b, w) => {      // blend two #rrggbb colors
 };
 
 ControlSim.run({
-  C0: '-2*(s+1)/s',
-  plant: (x, u) => [-h * (x[0] - Ta) - u],    // T' = -h (T - Ta) - P
+  C0: DEFAULT_C,
+  plant: (x, u) => [-h * (x[0] - Ta) + u],    // T' = -h (T - Ta) - P = -h (T - Ta) + u
   x0: [15],
   y: x => x[0],
   r: t => targets[Math.floor(t / 6) % targets.length],
-  uLim: [0, 40],                              // cooling power limits
-  push: 10, pushTime: 1,
+  uLim: [-40, 0],                             // u = -P, cooling power P from 0 to 40
+  push: -10, pushTime: 1,                     // door: u + 10 (heat), ice: u - 10 (cool)
   pushNames: ['Open the door (heat)', 'Add ice (cool)'],
-  G: { num: [-1], den: [1, h],
-       text: 'G(s) = −1/(s + h), h = 1 1/s, ambient Ta = 15 °C. Input: cooling power P (0 to 40). Output: room temperature T. Note the negative gain: try a negative C(s).' },
+  G: { num: [1], den: [1, h],
+       text: 'G(s) = 1/(s + h), h = 1 1/s, ambient Ta = 15 °C. Input: u = −P, minus the cooling power (P from 0 to 40). Output: room temperature T.' },
   yLabel: 'temperature [°C]', yScale: 1,
   sceneLabel: 'cold room and thermometer',
   bounds: [-5, 7, -1.5, 7.5],
@@ -46,10 +47,11 @@ ControlSim.run({
     const c = s.colors, T = s.x[0], a = Math.min(Math.max((T + 5) / 25, 0), 1);
     const hexOf = v => { const m = v.match(/^#([0-9a-f]{6})$/i); return m ? v : '#888888'; };
     g.rect(-4, 0, 6, 5, mix(hexOf(c.cold), hexOf(c.warm), a), c.fg, 3);
-    g.rect(-0.5, 0, 1.5, 3.5, s.d < 0 ? '#fff6cc' : '#c4c8cc', c.fg, 1);    // door (open = light)
+    g.rect(-0.5, 0, 1.5, 3.5, s.d > 0 ? '#fff6cc' : '#c4c8cc', c.fg, 1);    // door (open = light)
     g.rect(-3.5, 5, 2, 0.8, '#d9dde1', c.fg, 1);
     g.text('AC', -2.5, 5.4, { weight: 700, color: '#222222' });
-    const n = Math.round(Math.min(s.u, 40) / 5);
+    const P = -s.u;                             // cooling power
+    const n = Math.round(Math.min(P, 40) / 5);
     for (let i = 1; i <= n; i++) { const xi = -3.5 + 2 * i / (n + 1); g.line([[xi, 4.9], [xi, 4.2]], '#9cc7ff', 2); }
     g.text(T.toFixed(1) + ' °C', -1.6, 2.5, { size: 22, weight: 700, color: '#ffffff' });
     const tm = TT => 0.2 + 5 * (TT + 5) / 25;
@@ -58,7 +60,7 @@ ControlSim.run({
     const Tc = Math.min(Math.max(T, -5), 20);
     g.rect(4.2, tm(-5), 0.6, tm(Tc) - tm(-5), '#d02a2a');
     g.line([[3.8, tm(s.r)], [5.2, tm(s.r)]], c.ref, 2.5, [8, 6]);
-    g.text('Cooling power P = ' + s.u.toFixed(1), -1, -0.8, { size: 13, color: c.muted });
+    g.text('Cooling power P = −u = ' + P.toFixed(1), -1, -0.8, { size: 13, color: c.muted });
   }
 });
 </script>
