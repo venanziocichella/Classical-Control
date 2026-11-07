@@ -142,3 +142,22 @@ header.ix-head { max-width: 1000px; }
 .ix-list .hm-files a { display: inline; padding: 0; border: 0; background: none; height: auto; color: var(--accent); }
 .ix-list a.cs-btn { display: inline-block; height: auto; padding: 6px 12px; }
 .ix-list a.cs-primary { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+
+/* Nyquist contour mapping demo */
+:root { --map: #7a3fb0; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --map: #c39af0; } }
+:root[data-theme="dark"] { --map: #c39af0; }
+.np-main { display: grid; gap: 12px; min-width: 0; }
+.np-planes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; min-width: 0; }
+@media (max-width: 700px) { .np-planes { grid-template-columns: minmax(0, 1fr); } }
+.fr-card canvas.np-plane { height: clamp(300px, 56vh, 600px); }
+.fr-card canvas.np-s { touch-action: none; cursor: crosshair; }
+.fr-card canvas.np-phase { height: 150px; }
+.np-count, .np-tracer, .cs-polelist { white-space: pre-line; }
+.np-tracer { white-space: pre; overflow-x: auto; font-size: 0.8rem; }
+.np-count { font-size: 0.85rem; }
+.np-verdict { font-size: 1rem; font-weight: 700; text-align: center; font-family: var(--font-mono); }
+.np-verdict.ok { color: var(--ok); } .np-verdict.bad { color: var(--alert); }
+.np-check { font-size: 0.85rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.np-tools .cs-btn { padding: 6px 9px; }
+.np-grid .cs-select { max-width: 100%; min-width: 0; }

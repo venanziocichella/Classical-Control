@@ -2,10 +2,10 @@
 
 Writes Web/routh-hurwitz/*.html, Web/root-locus/*.html, Web/bode/*.html (the
 examples with a Bode design, c0_bd in pages_control.py),
-Web/frequency-response/*.html and Web/index.html from the page definitions in
-pages_control.py and pages_fr.py. The pages load ../engine.js (or ../fr.js)
-and ../sim.css, so the Web folder works as is from a double-click or on a web
-server (GitHub Pages).
+Web/frequency-response/*.html, Web/nyquist/*.html and Web/index.html from the
+page definitions in pages_control.py, pages_fr.py and pages_nyq.py. The pages
+load ../engine.js (plus ../fr.js or ../nyquist.js) and ../sim.css, so the Web
+folder works as is from a double-click or on a web server (GitHub Pages).
 """
 import html
 import pathlib
@@ -13,6 +13,7 @@ import urllib.parse
 
 from pages_control import PAGES
 from pages_fr import FR_PAGES
+from pages_nyq import NYQ_PAGES
 
 WEB = pathlib.Path(__file__).resolve().parent.parent
 REPO = WEB.parent
@@ -81,6 +82,10 @@ def main():
         write(WEB / 'frequency-response' / f'{name}.html', SHELL.format(
             title=p['title'], h1=html.escape(p['h1']), lead=html.escape(p['lead']),
             source='pages_fr.py', matlab=p['matlab'], scripts=tags(p.get('scripts', ['engine.js', 'fr.js'])), pre='', js=p['js']))
+    for name, p in NYQ_PAGES.items():
+        write(WEB / 'nyquist' / f'{name}.html', SHELL.format(
+            title=p['title'], h1=html.escape(p['h1']), lead=html.escape(p['lead']),
+            source='pages_nyq.py', matlab=p['matlab'], scripts=tags(p['scripts']), pre='', js=p['js']))
     write(WEB / 'index.html', index())
     write(REPO / 'index.html', home())
 
@@ -96,6 +101,7 @@ def index():
         ('bode', 'Bode Plots', 'Bode designs: PI (cold storage), lead (DC motor), lag (mass-spring-damper) and lead-lag (pendulum) compensators.',
          [(n, p) for n, p in PAGES.items() if 'c0_bd' in p]),
         ('frequency-response', 'Frequency Response', 'Chapter 7 demos: what a linear system does to a sinusoid, and a song played through G(s).', FR_PAGES.items()),
+        ('nyquist', 'Nyquist', 'Chapter 9: draw a contour on the s-plane and see its image through L(s); Cauchy\'s argument principle and the Nyquist criterion.', NYQ_PAGES.items()),
     ]
     body = '\n'.join(
         f'  <section class="ix-group">\n    <h2>{t}</h2>\n    <p>{html.escape(d)}</p>\n    <ul class="ix-list">\n{cards(f, it)}\n    </ul>\n  </section>'
@@ -114,7 +120,7 @@ def index():
 <header class="cs-head ix-head">
   <a class="cs-back" href="../index.html">Course home</a>
   <h1>ME3600 control demos</h1>
-  <p>Real-time simulations from the course. No MATLAB needed: pick an example, type your controller C(s) and test it.</p>
+  <p>Interactive demos from the course. No MATLAB needed: pick an example, type your controller C(s) (or your L(s)) and test it.</p>
 </header>
 <main class="ix-main">
 {body}
@@ -128,7 +134,7 @@ def index():
 # and a link to the browser version of each example that has one.
 HOME_CHAPTERS = [   # (repo folder, browser demo folder)
     ('Routh Hurwitz', 'routh-hurwitz'), ('Root Locus', 'root-locus'),
-    ('Frequency Response', 'frequency-response'), ('Bode Plots', 'bode'),
+    ('Frequency Response', 'frequency-response'), ('Bode Plots', 'bode'), ('Nyquist', 'nyquist'),
 ]
 HIDE = {   # files kept in the repo but not listed on the course home
     'Root Locus/Mass Spring Damper/MSD_sim.slx', 'Root Locus/Mass Spring Damper/MSD_Control_Design.pdf',
@@ -136,17 +142,19 @@ HIDE = {   # files kept in the repo but not listed on the course home
 }
 FR_FOLDER = {'Servo (First Order)': 'servo', 'Spring Damper (High Pass)': 'spring-damper',
              'Mass Spring Damper (Second Order)': 'mass-spring-damper', 'Muffled Song': 'muffled-song'}
+NYQ_FOLDER = {'Contour Mapping': 'contour-mapping'}
+DEMO_PAGES = {'frequency-response': FR_PAGES, 'nyquist': NYQ_PAGES}
 
 
 def home():
-    slug = {v: k for k, v in FOLDER.items()} | FR_FOLDER
+    slug = {v: k for k, v in FOLDER.items()} | FR_FOLDER | NYQ_FOLDER
     url = lambda path: urllib.parse.quote(path.relative_to(REPO).as_posix())
 
     def files(folder):
         out = []
         for f in sorted(p for p in folder.iterdir() if p.is_file() and not p.name.startswith('.')):
             rel = f.relative_to(REPO).as_posix()
-            if rel in HIDE or (f.name == 'README.md' and rel.startswith('Frequency Response/')):
+            if rel in HIDE or (f.name == 'README.md' and rel.startswith(('Frequency Response/', 'Nyquist/'))):
                 continue
             href = GITHUB + url(f) if f.suffix == '.md' else url(f)
             out.append(f'<li><a href="{href}">{html.escape(f.name)}</a></li>')
@@ -154,7 +162,7 @@ def home():
 
     def card(folder, demo):
         name = slug.get(folder.name)
-        p = (FR_PAGES if demo == 'frequency-response' else PAGES).get(name) if name else None
+        p = DEMO_PAGES.get(demo, PAGES).get(name) if name else None
         run = f'<a class="cs-btn cs-primary" href="Web/{demo}/{name}.html">Run in the browser</a>' if p and demo else ''
         lead = f'<p class="ix-lead">{html.escape(p["lead"])}</p>' if p else ''
         return f'      <li class="hm-card"><h3>{html.escape(folder.name)}</h3>{lead}{run}{files(folder)}</li>'
