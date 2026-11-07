@@ -7,46 +7,32 @@ function NYQ_Mapping_Demo
 %   contour, updated while you draw.
 %
 %   - Type L(s) in the box like C(s) in the other demos (numbers, s,
-%     + - * / ^ and parentheses, e.g. (s+1)/((s+2)^2+1)), or pick an example
-%     of Chapter 9.
-%   - Tools: Draw (freehand), Circle and Rectangle (drag; traced clockwise),
+%     + - * / ^ and parentheses, e.g. (s+1)/((s+2)^2+1)).
+%   - Tools: Draw (freehand; end the curve where you started to close it),
 %     Move (drag the contour, a pole or a zero, or the empty plane to pan).
 %     Nyquist contour: up the jw axis (indenting to the right of poles on
 %     it) and back along a large clockwise semicircle.
-%   - The demo counts the zeros Z and poles P inside the contour and the
-%     encirclements of the image around the origin (Cauchy, N = Z - P) or
-%     around -1 (Nyquist, Z = N + P, zeros of 1 + kL).
+%   - For a closed contour the demo counts the poles P of L inside and the
+%     encirclements N of -1 by the image: Z = N + P zeros of 1 + kL inside.
 %   - Play moves a point along the contour: the phasors from the poles and
 %     zeros to the point, and the net turn of each one, are shown.
 %   - Compressed scale: |L| > 1 is drawn at radius 1 + ln|L|, so the image
 %     stays on the screen near a pole.
 %   Mouse wheel: zoom. Keys: Space = play, N = Nyquist contour,
-%   V = reverse, C = clear, F = fit.
+%   C = clear, F = fit.
 %
 %   Base MATLAB R2021a or newer, no toolboxes.
 
 %% ===================== SETTINGS: EDIT HERE =====================
-preset0 = 6;        % example shown at start (number in the list below)
+L0 = '50/((s+1)*(s+2)*(s+3))';   % L(s) shown at start, with the Nyquist contour
 %% ===============================================================
-% Examples: name, L(s), contour {'circle', cx, cy, r} | {'rect', x0, y0, x1, y1} | {'nyquist'},
-% count around (0 or -1), scale
-P = struct('name', {}, 'L', {}, 'contour', {}, 'center', {}, 'scale', {});
-P(end+1) = struct('name', 'Mapping a contour: (s+2)/(s+1)', 'L', '(s+2)/(s+1)', 'contour', {{'circle', -1, 1, 0.45}}, 'center', 0, 'scale', 'linear');
-P(end+1) = struct('name', 'Square through 2s+1', 'L', '2*s+1', 'contour', {{'rect', -1, -1, 1, 1}}, 'center', 0, 'scale', 'linear');
-P(end+1) = struct('name', 'Square through s/(s+2)', 'L', 's/(s+2)', 'contour', {{'rect', -1, -1, 1, 1}}, 'center', 0, 'scale', 'linear');
-P(end+1) = struct('name', 'Cauchy: zero inside, (s+1)/((s+2)^2+1)', 'L', '(s+1)/((s+2)^2+1)', 'contour', {{'circle', -1, 0, 0.6}}, 'center', 0, 'scale', 'linear');
-P(end+1) = struct('name', 'Cauchy: pole inside, (s+1)/((s+2)^2+1)', 'L', '(s+1)/((s+2)^2+1)', 'contour', {{'circle', -2, 1, 0.6}}, 'center', 0, 'scale', 'linear');
-P(end+1) = struct('name', '3 zeros, 3 poles: one pole and three zeros inside', 'L', '(s-2)*((s-2)^2+4)/((s+4)*(s+1)*(s-3))', 'contour', {{'circle', 2.5, 0, 2.5}}, 'center', 0, 'scale', 'linear');
-P(end+1) = struct('name', 'Nyquist: 50/((s+1)(s+2)(s+3)), try k > 1.2', 'L', '50/((s+1)*(s+2)*(s+3))', 'contour', {{'nyquist'}}, 'center', -1, 'scale', 'linear');
-P(end+1) = struct('name', 'Nyquist: integrator 1/(s(s+1))', 'L', '1/(s*(s+1))', 'contour', {{'nyquist'}}, 'center', -1, 'scale', 'log');
-P(end+1) = struct('name', 'Nyquist: rocket with PI, (3+9/s)G(s)', 'L', '(3+9/s)*(s^2-0.5*s+0.5)/(s^3-s^2-2*s+8)', 'contour', {{'nyquist'}}, 'center', -1, 'scale', 'log');
 
 %% ======================= Engine (no need to edit below) =======================
 mapC = [122 63 176]/255; zeroC = [29 95 168]/255; poleC = [208 96 42]/255;
 red = [180 56 42]/255; green = [47 125 50]/255; gray = [0.45 0.45 0.45]; light = [0.88 0.9 0.92];
 Lsys = []; kGain = 1; clRoots = [];
 cpts = []; cclosed = false; ckind = '';          % contour: complex column vector
-tool = 'draw'; closeCurve = true; center = 0; scaleMode = 'linear';
+tool = 'draw'; center = -1; scaleMode = 'linear';   % encirclements always counted around -1
 sV = struct('cx', 0, 'cy', 0, 'half', 5); lV = struct('cx', 0, 'cy', 0, 'half', 2); lT = lV; lAuto = true;
 img = []; dirty = true; tr = 0; playing = false; hoverS = NaN; dragS = []; dragL = []; typing = false;
 
@@ -113,31 +99,26 @@ pn = uigridlayout(gl, [26 1]); pn.Layout.Row = [1 2]; pn.Layout.Column = 3;
 pn.RowHeight = repmat({'fit'}, 1, 26); pn.RowSpacing = 5; pn.Scrollable = 'on';
 uilabel(pn, 'Text', 'Mapping function L(s)', 'FontWeight', 'bold', 'FontSize', 14);
 g1 = uigridlayout(pn, [1 2]); g1.Padding = [0 0 0 0]; g1.ColumnWidth = {'1x', 'fit'};
-edL = uieditfield(g1, 'text', 'Value', P(preset0).L, 'ValueChangingFcn', @(~, ~) setTyping(true), ...
+edL = uieditfield(g1, 'text', 'Value', L0, 'ValueChangingFcn', @(~, ~) setTyping(true), ...
     'ValueChangedFcn', @(~, ~) applyText());
 uibutton(g1, 'Text', 'Apply', 'ButtonPushedFcn', @(~, ~) applyText());
-ddPre = uidropdown(pn, 'Items', {P.name}, 'ItemsData', 1:numel(P), 'Value', preset0, 'ValueChangedFcn', @(src, ~) loadPreset(src.Value));
 lblL = uilabel(pn, 'Text', '', 'WordWrap', 'on', 'FontName', 'monospaced');
 lblK = uilabel(pn, 'Text', 'Gain k = 1 (the right plot shows k L(s))');
 slK = uislider(pn, 'Limits', [-2 2], 'Value', 0, 'MajorTicks', -2:2, 'MajorTickLabels', {'0.01', '0.1', '1', '10', '100'}, 'MinorTicks', [], ...
     'ValueChangingFcn', @(~, ev) setK(10^ev.Value), 'ValueChangedFcn', @(src, ~) setK(10^src.Value));
 uilabel(pn, 'Text', 'Contour', 'FontWeight', 'bold', 'FontSize', 14);
-g2 = uigridlayout(pn, [1 4]); g2.Padding = [0 0 0 0]; g2.ColumnSpacing = 4;
-names = {'draw', 'circle', 'rect', 'move'}; labels = {'Draw', 'Circle', 'Rect', 'Move'};
-btTool = gobjects(1, 4);
-for kt = 1:4
+g2 = uigridlayout(pn, [1 2]); g2.Padding = [0 0 0 0]; g2.ColumnSpacing = 4;
+names = {'draw', 'move'}; labels = {'Draw', 'Move'};
+btTool = gobjects(1, 2);
+for kt = 1:2
     btTool(kt) = uibutton(g2, 'state', 'Text', labels{kt}, 'ValueChangedFcn', @(~, ~) setTool(names{kt}));
 end
-g3 = uigridlayout(pn, [1 3]); g3.Padding = [0 0 0 0]; g3.ColumnSpacing = 4; g3.ColumnWidth = {'1.4x', '1x', '1x'};
+g3 = uigridlayout(pn, [1 2]); g3.Padding = [0 0 0 0]; g3.ColumnSpacing = 4;
 uibutton(g3, 'Text', 'Nyquist (N)', 'ButtonPushedFcn', @(~, ~) setNyquist());
-uibutton(g3, 'Text', 'Reverse (V)', 'ButtonPushedFcn', @(~, ~) reverseC());
 uibutton(g3, 'Text', 'Clear (C)', 'ButtonPushedFcn', @(~, ~) clearC());
-uicheckbox(pn, 'Text', 'close the curve when I let go', 'Value', true, 'ValueChangedFcn', @(src, ~) setClose(src.Value));
 uilabel(pn, 'WordWrap', 'on', 'FontColor', gray, 'Text', ...
-    'Draw: freehand. Circle, Rect: drag (traced clockwise). Move: drag the contour, a pole or a zero (L(s) follows), or the empty plane to pan. Wheel: zoom.');
-uilabel(pn, 'Text', 'Encirclements', 'FontWeight', 'bold', 'FontSize', 14);
-ddCenter = uidropdown(pn, 'Items', {'around the origin (Cauchy, L)', 'around -1 (Nyquist, 1 + L)'}, 'ItemsData', [0 -1], ...
-    'ValueChangedFcn', @(src, ~) setCenter(src.Value));
+    'Draw: freehand; end where you started to close the curve. Move: drag the contour, a pole or a zero (L(s) follows), or the empty plane to pan. Wheel: zoom.');
+uilabel(pn, 'Text', 'Encirclements of -1', 'FontWeight', 'bold', 'FontSize', 14);
 lblCount = uilabel(pn, 'Text', '', 'WordWrap', 'on');
 lblVerdict = uilabel(pn, 'Text', '', 'FontSize', 16, 'FontWeight', 'bold', 'HorizontalAlignment', 'center', 'WordWrap', 'on');
 uilabel(pn, 'Text', 'Moving point', 'FontWeight', 'bold', 'FontSize', 14);
@@ -155,7 +136,7 @@ cbAuto = uicheckbox(pn, 'Text', 'auto-fit the L-plane', 'Value', true, 'ValueCha
 cbUnit = uicheckbox(pn, 'Text', 'unit circle |L| = 1', 'Value', false);
 
 setTool('draw');
-loadPreset(preset0);
+init();
 
 %% Loop
 tFrame = tic;
@@ -221,14 +202,6 @@ end
     end
 
 %% ======================= contours =======================
-    function z = circlePts(cx, cy, r)
-        a = pi/2 - 2*pi*(0:239)'/240;           % clockwise, from the top
-        z = cx + 1i*cy + r*exp(1i*a);
-    end
-    function z = rectPts(x0, y0, x1, y1)
-        a = min(x0, x1); b = max(x0, x1); c = min(y0, y1); d = max(y0, y1);
-        z = [a + 1i*d; b + 1i*d; b + 1i*c; a + 1i*c];   % clockwise
-    end
     function z = nyquistPts()
         mags = abs([Lsys.poles; Lsys.zeros]);
         big = max([1; mags]); R = 200*big;
@@ -259,36 +232,15 @@ end
         cclosed = closed; ckind = kind; tr = 0; slT.Value = 0; dirty = true;
     end
     function setNyquist(), setContour(nyquistPts(), true, 'nyquist'); end
-    function reverseC()
-        if isempty(cpts), return; end
-        cpts = flipud(cpts);
-        if cclosed, cpts = circshift(cpts, 1); end
-        dirty = true;
-    end
     function clearC(), setContour([], false, ''); playing = false; btPlay.Text = 'Play (Space)'; end
-    function contourFrom(c)
-        switch c{1}
-            case 'circle', setContour(circlePts(c{2}, c{3}, c{4}), true, 'circle');
-            case 'rect', setContour(rectPts(c{2}, c{3}, c{4}, c{5}), true, 'rect');
-            otherwise, setNyquist();
-        end
-    end
-    function loadPreset(i)
-        p = P(i); edL.Value = p.L; ddPre.Value = i;
-        [num, den] = localParseL(p.L); setL(num, den); setK(1);
-        center = p.center; ddCenter.Value = center;
-        scaleMode = p.scale; ddScale.Value = scaleMode; setAuto(true);
-        cpts = [];
-        if strcmp(p.contour{1}, 'nyquist'), fitS([]); else, fitS(p.contour); end
-        contourFrom(p.contour);
-        playing = false; btPlay.Text = 'Play (Space)';
+    function init()
+        [num, den] = localParseL(L0); setL(num, den); setK(1);
+        fitS([]); setNyquist();
     end
     function setTool(k)
         tool = k;
-        for i = 1:4, btTool(i).Value = strcmp(names{i}, k); end
+        for i = 1:2, btTool(i).Value = strcmp(names{i}, k); end
     end
-    function setClose(v), closeCurve = v; end
-    function setCenter(v), center = v; dirty = true; end
     function setScale(v), scaleMode = v; setAuto(true); end
     function setAuto(v), lAuto = v; cbAuto.Value = v; dirty = true; end
     function setTr(v), tr = v; playing = false; btPlay.Text = 'Play (Space)'; end
@@ -335,7 +287,7 @@ end
         T = T/max(wsum, eps);
         % poles / zeros on the contour
         nearTol = 0.006*sV.half; onC = {};
-        if center == 0, zset = Lsys.zeros; zname = 'zero '; else, zset = clRoots; zname = 'zero of 1 + kL at '; end
+        zset = clRoots; zname = 'zero of 1 + kL at ';
         for r = Lsys.poles.', if distToPolyline(cpts, cclosed, r) < nearTol, onC{end + 1} = ['pole ' fmtC(r)]; end, end %#ok<AGROW>
         for r = zset.', if distToPolyline(cpts, cclosed, r) < nearTol, onC{end + 1} = [zname fmtC(r)]; end, end %#ok<AGROW>
         % unwrapped phase of L - c and net number of turns
@@ -375,13 +327,13 @@ end
             lblCount.Text = 'Draw a closed contour on the s-plane.'; lblVerdict.Text = ''; return
         end
         if ~cclosed
-            lblCount.Text = 'An open curve maps to an open curve. Close it (or tick "close the curve") to count encirclements.';
+            lblCount.Text = 'An open curve maps to an open curve. End the curve where you started (or use the Nyquist contour) to count encirclements.';
             lblVerdict.Text = ''; return
         end
         cw = signedArea(cpts) < 0; sg = 1 - 2*cw;   % -1 for clockwise
         if cw, dirW = 'clockwise'; Nsym = 'N_cw'; else, dirW = 'counterclockwise'; Nsym = 'N_ccw'; end
         inside = @(rs) sum(arrayfun(@(r) sg*windingAround(cpts, r), rs));
-        Pin = inside(Lsys.poles); Z0 = inside(Lsys.zeros); Zcl = inside(clRoots);
+        Pin = inside(Lsys.poles); Zcl = inside(clRoots);
         rows = {['Contour: closed, traced ' dirW iff(strcmp(ckind, 'nyquist'), ' (Nyquist contour).', '.')]};
         lblVerdict.Text = ''; lblVerdict.FontColor = green;
         if ~isempty(img.onC)
@@ -390,30 +342,20 @@ end
             lblCount.Text = rows; lblVerdict.Text = 'undefined'; lblVerdict.FontColor = red; return
         end
         if isempty(img.wind), N = []; else, N = sg*img.wind; end
-        if center == 0
-            rows{end + 1} = sprintf('Inside: Z = %d zeros and P = %d poles of L(s).', Z0, Pin);
-            if isempty(N), rows{end + 1} = 'Image: could not count.';
-            else
-                rows{end + 1} = sprintf('Image %s the origin: %s = %d.', encText(img.wind), Nsym, N);
-                lblVerdict.Text = sprintf('%s = Z - P = %d - %d = %d', Nsym, Z0, Pin, Z0 - Pin);
-                if N ~= Z0 - Pin, lblVerdict.FontColor = red; end
-            end
+        rows{end + 1} = sprintf('Poles of L(s) inside: P = %d.', Pin);
+        if isempty(N), rows{end + 1} = 'Image: could not count.';
         else
-            rows{end + 1} = sprintf('Poles of L(s) inside: P = %d.', Pin);
-            if isempty(N), rows{end + 1} = 'Image: could not count.';
+            rows{end + 1} = sprintf('Image %s -1: %s = %d.', encText(img.wind), Nsym, N);
+            rows{end + 1} = sprintf('Zeros of 1 + kL(s) inside: Z = %s + P = %d (roots of 1 + kL give %d).', Nsym, N + Pin, Zcl);
+            if strcmp(ckind, 'nyquist') && cw
+                if N + Pin == 0, lblVerdict.Text = 'Closed loop stable: Z = 0';
+                else, lblVerdict.Text = sprintf('Closed loop unstable: Z = %d in the RHP', N + Pin); lblVerdict.FontColor = red; end
             else
-                rows{end + 1} = sprintf('Image %s -1: %s = %d.', encText(img.wind), Nsym, N);
-                rows{end + 1} = sprintf('Zeros of 1 + kL(s) inside: Z = %s + P = %d (roots of 1 + kL give %d).', Nsym, N + Pin, Zcl);
-                if strcmp(ckind, 'nyquist') && cw
-                    if N + Pin == 0, lblVerdict.Text = 'Closed loop stable: Z = 0';
-                    else, lblVerdict.Text = sprintf('Closed loop unstable: Z = %d in the RHP', N + Pin); lblVerdict.FontColor = red; end
-                else
-                    lblVerdict.Text = sprintf('Z = %s + P = %d', Nsym, N + Pin);
-                    if N + Pin ~= Zcl, lblVerdict.FontColor = red; end
-                end
+                lblVerdict.Text = sprintf('Z = %s + P = %d', Nsym, N + Pin);
+                if N + Pin ~= Zcl, lblVerdict.FontColor = red; end
             end
-            rows{end + 1} = ['Roots of 1 + kL(s): ' rootList(clRoots)];
         end
+        rows{end + 1} = ['Roots of 1 + kL(s): ' rootList(clRoots)];
         lblCount.Text = rows;
     end
     function s = encText(w)
@@ -427,15 +369,9 @@ end
     end
 
 %% ======================= views and mouse =======================
-    function fitS(c)
+    function fitS(~)
         if isempty(Lsys), pts = 0; else, pts = [Lsys.poles; Lsys.zeros; 0]; end
-        if ~isempty(c) && strcmp(c{1}, 'circle')
-            pts = [pts; c{2} + 1i*c{3} + c{4}*[1+1i; -1-1i]];
-        elseif ~isempty(c) && strcmp(c{1}, 'rect')
-            pts = [pts; c{2} + 1i*c{3}; c{4} + 1i*c{5}];
-        elseif isempty(c) && ~isempty(cpts) && ~strcmp(ckind, 'nyquist')
-            pts = [pts; cpts];
-        end
+        if ~isempty(cpts) && ~strcmp(ckind, 'nyquist'), pts = [pts; cpts]; end
         x0 = min(real(pts)); x1 = max(real(pts)); y0 = min(imag(pts)); y1 = max(imag(pts));
         asp = aspectOf(axS);
         sV.half = max(1.5, 1.3*max((y1 - y0)/2*min(asp, 1), (x1 - x0)/2/max(asp, 1)) + 0.5);
@@ -462,7 +398,6 @@ end
         u = pxSize(axS);
         switch tool
             case 'draw', dragS = struct('kind', 'draw', 'pts', s, 'c', s); setContour([s; s], false, 'free');
-            case {'circle', 'rect'}, dragS = struct('kind', tool, 'pts', [], 'c', s);
             otherwise
                 [dz, iz] = min(abs(Lsys.zeros - s)); [dp, ip] = min(abs(Lsys.poles - s));
                 if isempty(dz), dz = Inf; end
@@ -493,13 +428,6 @@ end
         switch dragS.kind
             case 'draw'
                 if abs(s - dragS.pts(end)) >= 3*u, dragS.pts(end + 1, 1) = s; cpts = dragS.pts; cclosed = false; dirty = true; end
-            case 'circle'
-                r = abs(s - dragS.c);
-                if r > 2*u, setContour(circlePts(real(dragS.c), imag(dragS.c), r), true, 'circle'); end
-            case 'rect'
-                if all(abs([real(s - dragS.c), imag(s - dragS.c)]) > 2*u)
-                    setContour(rectPts(real(dragS.c), imag(dragS.c), real(s), imag(s)), true, 'rect');
-                end
             case 'move'
                 cpts = cpts + (s - dragS.c); dragS.c = s; dirty = true;
                 if strcmp(ckind, 'nyquist'), ckind = 'free'; end
@@ -522,7 +450,14 @@ end
     end
     function mouseUp(~, ~)
         if ~isempty(dragS) && strcmp(dragS.kind, 'draw')
-            if numel(dragS.pts) < 3, setContour([], false, ''); else, setContour(dragS.pts, closeCurve, 'free'); end
+            z = dragS.pts;
+            if numel(z) < 3
+                setContour([], false, '');
+            elseif abs(z(end) - z(1)) < 12*pxSize(axS) && numel(z) > 8   % ends where it started: closed
+                setContour(z(1:end - 1), true, 'free');
+            else
+                setContour(z, false, 'free');
+            end
         end
         if ~isempty(dragL), dirty = true; end
         dragS = []; dragL = [];
@@ -541,7 +476,6 @@ end
         switch ev.Key
             case 'space', togglePlay();
             case 'n', setNyquist();
-            case 'v', reverseC();
             case {'c', 'delete', 'backspace'}, clearC();
             case 'f', fitS([]); setAuto(true);
         end
@@ -620,7 +554,7 @@ end
             set(hPhK, 'XData', repmat([0 1 NaN], 1, numel(ks)), 'YData', reshape([p0 + 360*ks; p0 + 360*ks; NaN(size(ks))], 1, []));
             set(hPh, 'XData', img.T, 'YData', ph); set(hPhDot, 'XData', img.T(ti), 'YData', img.ph(ti));
             net = img.ph(end) - p0;
-            if center == 0, nm = '$\angle L(s)$'; else, nm = '$\angle(1+L(s))$'; end
+            nm = '$\angle(1+L(s))$';
             hPhTitle.String = sprintf('Phase %s along the contour (unwrapped): net change %+.0f$^\\circ$ (%+.0f turns, + = counterclockwise)', nm, net, net/360);
         end
         hoverDraw();

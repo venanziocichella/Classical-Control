@@ -101,7 +101,7 @@ def index():
         ('bode', 'Bode Plots', 'Bode designs: PI (cold storage), lead (DC motor), lag (mass-spring-damper) and lead-lag (pendulum) compensators.',
          [(n, p) for n, p in PAGES.items() if 'c0_bd' in p]),
         ('frequency-response', 'Frequency Response', 'Chapter 7 demos: what a linear system does to a sinusoid, and a song played through G(s).', FR_PAGES.items()),
-        ('nyquist', 'Nyquist', 'Chapter 9: draw a contour on the s-plane and see its image through L(s); Cauchy\'s argument principle and the Nyquist criterion.', NYQ_PAGES.items()),
+        ('nyquist', 'Nyquist', 'Chapter 9: draw a curve or contour on the s-plane and see its image through L(s); encirclements of −1 and the Nyquist criterion.', NYQ_PAGES.items()),
     ]
     body = '\n'.join(
         f'  <section class="ix-group">\n    <h2>{t}</h2>\n    <p>{html.escape(d)}</p>\n    <ul class="ix-list">\n{cards(f, it)}\n    </ul>\n  </section>'
