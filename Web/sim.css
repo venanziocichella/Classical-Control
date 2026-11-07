@@ -161,3 +161,4 @@ header.ix-head { max-width: 1000px; }
 .np-check { font-size: 0.85rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
 .np-tools .cs-btn { padding: 6px 9px; }
 .np-grid .cs-select { max-width: 100%; min-width: 0; }
+.np-grid .cs-badge:empty { display: none; }

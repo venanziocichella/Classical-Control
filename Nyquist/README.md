@@ -2,7 +2,7 @@
 
 | Folder | What it shows | Main file |
 | --- | --- | --- |
-| `Contour Mapping` | draw a contour on the s-plane and see its image through L(s): Cauchy's argument principle and the Nyquist criterion | `NYQ_Mapping_Demo.m` |
+| `Contour Mapping` | draw a curve or contour on the s-plane and see its image through L(s); encirclements of −1 and the Nyquist criterion | `NYQ_Mapping_Demo.m` |
 
 Base MATLAB R2021a or newer, no toolboxes. The same demo runs in the browser,
 without MATLAB: `Web/nyquist/contour-mapping.html` (button "Run in the browser"

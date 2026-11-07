@@ -17,26 +17,24 @@ or open the browser version (no MATLAB): `Web/nyquist/contour-mapping.html`.
 
 - **L(s)**: type it like C(s) in the other demos (numbers, `s`, `+ - * / ^` and
   parentheses), e.g. `(s+1)/((s+2)^2+1)` or `(3+9/s)*(s^2-0.5*s+0.5)/(s^3-s^2-2*s+8)`.
-  The same text works in MATLAB and in the browser. Or pick one of the
-  examples of Chapter 9.
+  The same text works in MATLAB and in the browser. The demo starts with
+  L(s) = 50/((s+1)(s+2)(s+3)) and the Nyquist contour.
 - **Gain k**: the L-plane shows k·L(s) (useful with the Nyquist contour: watch
   the plot grow until it encircles −1).
-- **Tools**: *Draw* (freehand; the curve is closed when you let go, unless you
-  untick the box), *Circle* and *Rectangle* (drag; traced clockwise as in the
-  notes), *Move* (drag the contour across a pole or a zero, drag a pole or a
-  zero itself, and L(s) follows; complex pairs stay conjugate; or drag the empty
-  plane to pan). Mouse wheel: zoom.
+- **Tools**: *Draw* (freehand; the curve stays open, unless you end it where
+  you started, which closes it), *Move* (drag the contour across a pole or a
+  zero, drag a pole or a zero itself, and L(s) follows; complex pairs stay
+  conjugate; or drag the empty plane to pan). Mouse wheel: zoom.
 - **Nyquist contour**: up the jω axis, indenting to the right of poles on it,
-  and back along a large clockwise semicircle. **Reverse** flips the direction.
-- **Count around**: the origin (Cauchy, N = Z − P with Z, P the zeros and poles
-  of L inside) or −1 (Nyquist, Z = N + P with Z the zeros of 1 + kL inside).
-  The demo counts the encirclements from the image and checks them against the
-  poles and zeros inside the contour.
+  and back along a large clockwise semicircle.
+- **Encirclements of −1**: for a closed contour the demo counts the poles P of
+  L inside and the encirclements N of −1 by the image, and gives Z = N + P, the
+  zeros of 1 + kL inside, checked against the roots of 1 + kL.
 - **Moving point** (Play): a point runs along the contour; the phasors from the
   poles (orange) and zeros (blue) to the point are drawn, with the net turn of
   each one. At the end of the lap only the poles and zeros inside have turned
   by 360°.
-- **Phase plot** (bottom): the unwrapped ∠L (or ∠(1 + L)) along the contour;
+- **Phase plot** (bottom): the unwrapped ∠(1 + L) along the contour;
   its net change divided by 360° is the number of encirclements.
 - **Compressed scale**: |L| > 1 is drawn at radius 1 + ln|L|, so the image stays
   on the screen when the contour passes near a pole (as for the integrator).
@@ -46,16 +44,14 @@ infinity (or the origin): the demo says so and does not count.
 
 ## What to try in class
 
-1. *Mapping a contour*: a small circle through (s+2)/(s+1), then move it around.
-2. *Squares through 2s+1 and s/(s+2)*: the angles at the corners are preserved.
-3. *Cauchy*: drag a circle onto the zero of (s+1)/((s+2)²+1) (one clockwise
-   encirclement) and then onto a pole (one counterclockwise).
-4. *3 zeros, 3 poles*: one pole and three zeros inside, N_cw = 3 − 1 = 2.
-   Press Play and watch the phasor table.
-5. *Nyquist*: 50/((s+1)(s+2)(s+3)) is stable; raise k above 1.2 (K > 60) and the
-   plot encircles −1 twice: two closed-loop poles in the RHP.
-6. *Rocket with PI*: P = 2 unstable open-loop poles, two counterclockwise
-   encirclements of −1, Z = 0: stable.
+1. Draw an open curve and watch its image grow as you draw.
+2. Draw a closed curve around one pole (end where you started) and press Play:
+   only the phasor of the enclosed pole turns by 360°.
+3. With the Nyquist contour, raise k above 1.2 (K > 60): the plot of
+   50/((s+1)(s+2)(s+3)) encircles −1 twice, two closed-loop poles in the RHP.
+4. Type the rocket with PI, `(3+9/s)*(s^2-0.5*s+0.5)/(s^3-s^2-2*s+8)`, press
+   Nyquist contour and switch to the compressed scale: P = 2, two
+   counterclockwise encirclements of −1, Z = 0, stable.
 
 ## Requirements
 

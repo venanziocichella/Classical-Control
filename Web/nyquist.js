@@ -3,9 +3,10 @@
  *
  * Left: the s-plane, with the poles (x) and zeros (o) of L(s). Draw a curve or
  * a closed contour on it. Right: the L-plane, with the image L(s) of the
- * contour, updated while you draw. The demo counts the poles and zeros inside
- * the contour and the encirclements of the image around 0 (Cauchy) or -1
- * (Nyquist), and a point moving along the contour shows the phasors.
+ * contour, updated while you draw. For a closed contour (the Nyquist contour,
+ * or a curve that ends where it started) the demo counts the encirclements of
+ * -1 and the poles inside (Z = N + P), and a point moving along the contour
+ * shows the phasors.
  */
 (function () {
   'use strict';
@@ -77,28 +78,18 @@
     return str;
   }
 
-  // Preset open loops (examples of Chapter 9) and their contours.
-  const PRESETS = [
-    { name: 'Mapping a contour: (s+2)/(s+1)', L: '(s+2)/(s+1)', contour: ['circle', -1, 1, 0.45], center: 0 },
-    { name: 'Square through 2s+1', L: '2*s+1', contour: ['rect', -1, -1, 1, 1], center: 0 },
-    { name: 'Square through s/(s+2)', L: 's/(s+2)', contour: ['rect', -1, -1, 1, 1], center: 0 },
-    { name: 'Cauchy: zero inside, (s+1)/((s+2)^2+1)', L: '(s+1)/((s+2)^2+1)', contour: ['circle', -1, 0, 0.6], center: 0 },
-    { name: 'Cauchy: pole inside, (s+1)/((s+2)^2+1)', L: '(s+1)/((s+2)^2+1)', contour: ['circle', -2, 1, 0.6], center: 0 },
-    { name: '3 zeros, 3 poles: one pole and three zeros inside', L: '(s-2)*((s-2)^2+4)/((s+4)*(s+1)*(s-3))', contour: ['circle', 2.5, 0, 2.5], center: 0 },
-    { name: 'Nyquist: 50/((s+1)(s+2)(s+3)), try k > 1.2', L: '50/((s+1)*(s+2)*(s+3))', contour: ['nyquist'], center: -1 },
-    { name: 'Nyquist: integrator 1/(s(s+1))', L: '1/(s*(s+1))', contour: ['nyquist'], center: -1, scale: 'log' },
-    { name: 'Nyquist: rocket with PI, (3+9/s)G(s)', L: '(3+9/s)*(s^2-0.5*s+0.5)/(s^3-s^2-2*s+8)', contour: ['nyquist'], center: -1, scale: 'log' }
-  ];
+  // Default open loop shown at start (cfg.L overrides it), with the Nyquist contour.
+  const L_DEFAULT = '50/((s+1)*(s+2)*(s+3))';
 
   function run(cfg) {
     const root = document.getElementById(cfg.mount || 'app');
-    const P0 = PRESETS[cfg.preset === undefined ? 5 : cfg.preset];
 
     // ---- state ----
     let Lsys = null;                 // {num, den, zeros, poles, K}
     let kGain = 1, clRoots = [];     // zeros of 1 + k L
     let contour = null;              // {pts, closed, kind}
-    let tool = 'draw', closeCurve = true, center = P0.center, scale = P0.scale || 'linear';
+    let tool = 'draw', scale = cfg.scale || 'linear';
+    const center = -1;               // encirclements are always counted around -1
     let sView = { cx: 0, cy: 0, half: 5 }, lView = { cx: 0, cy: 0, half: 2 }, lTarget = null, lAuto = true;
     let img = null, dirty = true;
     let tr = 0, playing = false, hoverS = null;
@@ -112,20 +103,14 @@
     const lErr = el('div', { class: 'cs-err', role: 'alert', hidden: '' });
     const lBox = el('div', { class: 'cs-tf' });
     const pzList = el('div', { class: 'cs-polelist' });
-    const presetSel = el('select', { class: 'cs-select', 'aria-label': 'Examples', onchange: e => { if (e.target.value !== '') loadPreset(PRESETS[+e.target.value]); } },
-      [el('option', { value: '', text: 'Examples from Chapter 9…' })].concat(PRESETS.map((p, i) => el('option', { value: i, text: p.name }))));
     const slK = el('input', { id: 'gain', class: 'cs-range', type: 'range', min: -2, max: 2, step: 0.001, value: 0, 'aria-label': 'Gain k' });
     const lblK = el('div', { class: 'fr-val' });
     slK.addEventListener('input', () => setK(10 ** +slK.value));
     const toolBtns = {};
-    const toolRow = el('div', { class: 'cs-row np-tools' }, [['draw', 'Draw'], ['circle', 'Circle'], ['rect', 'Rectangle'], ['move', 'Move']].map(([k, t]) => {
+    const toolRow = el('div', { class: 'cs-row np-tools' }, [['draw', 'Draw'], ['move', 'Move']].map(([k, t]) => {
       toolBtns[k] = el('button', { type: 'button', class: 'cs-btn cs-toggle', 'aria-pressed': 'false', onclick: () => setTool(k) }, [t]);
       return toolBtns[k];
     }));
-    const chkClose = el('input', { type: 'checkbox', id: 'close', checked: '' });
-    chkClose.addEventListener('change', () => { closeCurve = chkClose.checked; });
-    const centerSel = el('select', { class: 'cs-select', 'aria-label': 'Count the encirclements of', onchange: e => { center = +e.target.value; dirty = true; } },
-      [el('option', { value: 0, text: 'the origin (Cauchy, L)' }), el('option', { value: -1, text: '−1 (Nyquist, 1 + L)' })]);
     const badge = el('span', { class: 'cs-badge' });
     const countBox = el('div', { class: 'np-count' });
     const verdict = el('div', { class: 'np-verdict' });
@@ -145,20 +130,18 @@
       el('section', { class: 'cs-sec' }, [el('h2', { text: 'Mapping function L(s)' }),
         el('form', { class: 'cs-cform', onsubmit: e => { e.preventDefault(); applyText(); } }, [
           el('label', { for: 'l-input', class: 'cs-lhs', text: 'L(s) =' }), lInput, el('button', { type: 'submit', class: 'cs-btn cs-primary' }, ['Apply'])]),
-        lErr, presetSel, lBox, pzList,
+        lErr, lBox, pzList,
         el('label', { for: 'gain', class: 'cs-note', text: 'Gain k: the right plot shows k·L(s)' }), slK, lblK]),
       el('section', { class: 'cs-sec' }, [el('h2', { text: 'Contour' }), toolRow,
-        el('div', { class: 'cs-row' }, [btn('Nyquist contour', () => setNyquist()), btn('Reverse', () => reverse()), btn('Clear', () => clear())]),
-        check(chkClose, 'close the curve when I let go'),
-        el('p', { class: 'cs-note', text: 'Draw: freehand. Circle and Rectangle: drag (traced clockwise). Move: drag the contour, a pole or a zero (L(s) follows), or the empty plane to pan. Wheel: zoom.' })]),
-      el('section', { class: 'cs-sec' }, [el('h2', {}, ['Encirclements ', badge]),
-        el('label', { class: 'cs-note' }, ['Count around ', centerSel]), countBox, verdict]),
+        el('div', { class: 'cs-row' }, [btn('Nyquist contour', () => setNyquist()), btn('Clear', () => clear())]),
+        el('p', { class: 'cs-note', text: 'Draw: freehand; end where you started to close the curve. Move: drag the contour, a pole or a zero (L(s) follows), or the empty plane to pan. Wheel: zoom.' })]),
+      el('section', { class: 'cs-sec' }, [el('h2', {}, ['Encirclements of −1 ', badge]), countBox, verdict]),
       el('section', { class: 'cs-sec' }, [el('h2', { text: 'Moving point' }),
         el('div', { class: 'cs-row' }, [btnPlay]), slT, trBox]),
       el('section', { class: 'cs-sec' }, [el('h2', { text: 'View' }),
         el('div', { class: 'cs-row' }, [scaleSel, btn('Fit s-plane', () => fitS()), btn('Fit L-plane', () => { lAuto = true; chkAuto.checked = true; dirty = true; })]),
         check(chkAuto, 'auto-fit the L-plane'), check(chkUnit, 'unit circle |L| = 1'),
-        el('p', { class: 'cs-note', text: 'Keys: Space play, N Nyquist contour, V reverse, C clear, F fit. Compressed scale: |L| > 1 is drawn at radius 1 + ln|L|, so points near a pole stay on the screen.' })])
+        el('p', { class: 'cs-note', text: 'Keys: Space play, N Nyquist contour, C clear, F fit. Compressed scale: |L| > 1 is drawn at radius 1 + ln|L|, so points near a pole stay on the screen.' })])
     ]);
     const card = (cv, extra) => el('div', { class: 'fr-card' + (extra || '') }, [cv]);
     root.append(el('div', { class: 'fr-grid np-grid' }, [
@@ -217,15 +200,6 @@
     }
 
     // ---- contours ----
-    function circlePts(cx, cy, r) {   // clockwise, from the top
-      const n = 240, out = [];
-      for (let k = 0; k < n; k++) { const a = Math.PI / 2 - TAU * k / n; out.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); }
-      return out;
-    }
-    function rectPts(x0, y0, x1, y1) {   // clockwise, from the top-left corner
-      const [a, b] = [Math.min(x0, x1), Math.max(x0, x1)], [c, d] = [Math.min(y0, y1), Math.max(y0, y1)];
-      return [[a, d], [b, d], [b, c], [a, c]];
-    }
     function nyquistPts() {
       // Up the imaginary axis (indenting to the right of poles on it), then the
       // clockwise semicircle of radius R; starts at s = 0+.
@@ -258,23 +232,12 @@
     }
     function setContour(pts, closed, kind) { contour = pts && pts.length > 1 ? { pts, closed, kind: kind || 'free' } : null; tr = 0; slT.value = 0; dirty = true; }
     function setNyquist() { setContour(nyquistPts(), true, 'nyquist'); }
-    function reverse() { if (contour) { contour.pts.reverse(); if (contour.closed) contour.pts.unshift(contour.pts.pop()); dirty = true; } }
     function clear() { setContour(null); playing = false; btnPlay.textContent = 'Play'; }
-    function contourFrom(spec) {
-      if (spec[0] === 'circle') setContour(circlePts(spec[1], spec[2], spec[3]), true, 'circle');
-      else if (spec[0] === 'rect') setContour(rectPts(spec[1], spec[2], spec[3], spec[4]), true, 'rect');
-      else setNyquist();
-    }
-    function loadPreset(p) {
-      lInput.value = p.L; applyText(); setK(1);
-      center = p.center; centerSel.value = String(center);
-      scale = p.scale || 'linear'; scaleSel.value = scale;
-      lAuto = true; chkAuto.checked = true;
-      contour = null;
-      fitS(p.contour[0] !== 'nyquist' ? p.contour : null);
-      contourFrom(p.contour);
-      tr = 0; slT.value = 0; playing = false; btnPlay.textContent = 'Play';
-      presetSel.value = String(PRESETS.indexOf(p));
+    function init() {
+      lInput.value = cfg.L || L_DEFAULT; applyText(); setK(1);
+      scaleSel.value = scale;
+      fitS();
+      setNyquist();
     }
 
     // ---- geometry ----
@@ -342,10 +305,9 @@
 
       // poles / zeros on the contour: the image goes through infinity (or 0) there
       const near = 0.006 * sView.half;
-      const zset = center === 0 ? Lsys.zeros : clRoots;
       const onC = [];
       Lsys.poles.forEach(p => { if (distToPolyline(contour.pts, contour.closed, p) < near) onC.push('pole ' + fmtC(p)); });
-      zset.forEach(z => { if (distToPolyline(contour.pts, contour.closed, z) < near) onC.push((center === 0 ? 'zero ' : 'zero of 1 + kL at ') + fmtC(z)); });
+      clRoots.forEach(z => { if (distToPolyline(contour.pts, contour.closed, z) < near) onC.push('zero of 1 + kL at ' + fmtC(z)); });
 
       // unwrapped phase of L - c along the contour, and its net change
       const c = [center, 0], phase = new Array(oL.length).fill(NaN);
@@ -396,32 +358,22 @@
       }
       if (!img.closed) {
         badge.textContent = 'open curve'; badge.className = 'cs-badge warn';
-        countBox.textContent = 'An open curve maps to an open curve. Close it (or tick "close the curve") to count encirclements.';
+        countBox.textContent = 'An open curve maps to an open curve. End the curve where you started (or use the Nyquist contour) to count encirclements.';
         verdict.textContent = ''; return;
       }
       const cw = signedArea(contour.pts) < 0, dirW = cw ? 'clockwise' : 'counterclockwise', sg = cw ? -1 : 1;
       const Nsym = cw ? 'N_cw' : 'N_ccw';
       const inside = rs => rs.reduce((s, r) => s + sg * windingAround(contour.pts, r), 0);
-      const P = inside(Lsys.poles), Z0 = inside(Lsys.zeros), Zcl = inside(clRoots);
+      const P = inside(Lsys.poles), Zcl = inside(clRoots);
       rows.push('Contour: closed, traced ' + dirW + (contour.kind === 'nyquist' ? ' (Nyquist contour)' : '') + '.');
       if (img.onC.length) {
         badge.textContent = 'undefined'; badge.className = 'cs-badge bad';
-        rows.push('The contour passes through the ' + img.onC.join(', ') + '. There L(s) is ' + (img.onC[0].startsWith('pole') ? 'infinite' : (center === 0 ? 'zero' : '−1')) +
+        rows.push('The contour passes through the ' + img.onC.join(', ') + '. There L(s) is ' + (img.onC[0].startsWith('pole') ? 'infinite' : '−1') +
           ' and the argument principle does not apply. Move the contour a little.');
         countBox.textContent = rows.join('\n'); verdict.textContent = ''; return;
       }
       const N = img.wind === null ? null : sg * img.wind;   // turns in the direction of the contour
       const enc = n => n === 0 ? 'does not encircle' : 'encircles ' + Math.abs(n) + '× ' + (n > 0 ? 'counterclockwise' : 'clockwise') + ' around';
-      if (center === 0) {
-        rows.push('Inside: Z = ' + Z0 + ' zero' + (Z0 === 1 ? '' : 's') + ' and P = ' + P + ' pole' + (P === 1 ? '' : 's') + ' of L(s).');
-        rows.push(N === null ? 'Image: could not count (refine the view).' : 'Image ' + enc(img.wind) + ' the origin: ' + Nsym + ' = ' + N + '.');
-        if (N !== null) {
-          const okc = N === Z0 - P;
-          v = Nsym + ' = Z − P = ' + Z0 + ' − ' + P + ' = ' + (Z0 - P) + (okc ? '  ✓' : '');
-          cls = okc ? 'ok' : 'bad';
-        }
-        badge.textContent = 'Cauchy'; badge.className = 'cs-badge ok';
-      } else {
         rows.push('Poles of L(s) inside: P = ' + P + '.');
         rows.push(N === null ? 'Image: could not count (refine the view).' : 'Image ' + enc(img.wind) + ' −1: ' + Nsym + ' = ' + N + '.');
         if (N !== null) {
@@ -433,18 +385,15 @@
         }
         const shown = clRoots.filter(r => r[1] >= -1e-12).sort((a, b) => b[0] - a[0]);
         rows.push('Roots of 1 + kL(s): ' + (shown.map(r => r[1] > 0 ? fmtC([r[0], r[1]]).replace(/ [+−] /, ' ± ') : fmtC(r)).join(',  ') || 'none'));
-        badge.textContent = 'Nyquist'; badge.className = 'cs-badge ok';
-      }
+        badge.textContent = ''; badge.className = 'cs-badge';
       countBox.textContent = rows.join('\n');
       verdict.textContent = v; verdict.className = 'np-verdict ' + cls;
     }
 
     // ---- views ----
-    function fitS(spec) {
+    function fitS() {
       const pts = Lsys ? Lsys.poles.concat(Lsys.zeros, clRoots.length < 12 ? [] : []) : [];
-      if (spec && spec[0] === 'circle') pts.push([spec[1] - spec[3], spec[2] - spec[3]], [spec[1] + spec[3], spec[2] + spec[3]]);
-      else if (spec && spec[0] === 'rect') pts.push([spec[1], spec[2]], [spec[3], spec[4]]);
-      else if (contour && contour.kind !== 'nyquist' && !spec) contour.pts.forEach(p => pts.push(p));
+      if (contour && contour.kind !== 'nyquist') contour.pts.forEach(p => pts.push(p));
       pts.push([0, 0]);
       const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
       const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
@@ -473,8 +422,6 @@
       const [px, py] = posOf(sCv, e), t = xf(sCv, sView), s = t.inv(px, py);
       sCv.setPointerCapture(e.pointerId);
       if (tool === 'draw') { drag = { kind: 'draw', pts: [s] }; setContour([s, s], false); }
-      else if (tool === 'circle') drag = { kind: 'circle', c: s };
-      else if (tool === 'rect') drag = { kind: 'rect', c: s };
       else {
         // nearest pole/zero within 12 px
         let best = null, bd = 12;
@@ -496,11 +443,6 @@
       if (drag.kind === 'draw') {
         const l = drag.pts[drag.pts.length - 1];
         if (Math.hypot(t.X(l[0]) - px, t.Y(l[1]) - py) >= 3) { drag.pts.push(s); contour = { pts: drag.pts.slice(), closed: false, kind: 'free' }; dirty = true; }
-      } else if (drag.kind === 'circle') {
-        const r = Math.hypot(s[0] - drag.c[0], s[1] - drag.c[1]);
-        if (r * t.sc > 2) setContour(circlePts(drag.c[0], drag.c[1], r), true, 'circle');
-      } else if (drag.kind === 'rect') {
-        if (Math.abs(s[0] - drag.c[0]) * t.sc > 2 && Math.abs(s[1] - drag.c[1]) * t.sc > 2) setContour(rectPts(drag.c[0], drag.c[1], s[0], s[1]), true, 'rect');
       } else if (drag.kind === 'move') {
         const dx = s[0] - drag.last[0], dy = s[1] - drag.last[1];
         contour.pts = contour.pts.map(p => [p[0] + dx, p[1] + dy]); contour.kind = contour.kind === 'nyquist' ? 'free' : contour.kind;
@@ -521,7 +463,11 @@
     const endDrag = () => {
       if (drag && drag.kind === 'draw') {
         if (drag.pts.length < 3) setContour(null);
-        else setContour(drag.pts.slice(), closeCurve, 'free');
+        else {   // closed only if it ends where it started (within 12 px)
+          const t = xf(sCv, sView), a = drag.pts[0], b = drag.pts[drag.pts.length - 1];
+          const closed = Math.hypot(a[0] - b[0], a[1] - b[1]) * t.sc < 12 && drag.pts.length > 8;
+          setContour(closed ? drag.pts.slice(0, -1) : drag.pts.slice(), closed, 'free');
+        }
       }
       drag = null;
     };
@@ -551,7 +497,6 @@
       const k = e.key.toLowerCase();
       if (e.key === ' ') togglePlay();
       else if (k === 'n') setNyquist();
-      else if (k === 'v') reverse();
       else if (k === 'c' || e.key === 'Delete' || e.key === 'Backspace') clear();
       else if (k === 'f') { fitS(); lAuto = true; chkAuto.checked = true; }
       else return;
@@ -589,7 +534,7 @@
       ctx.font = 'italic 14px ' + colors.body; ctx.fillStyle = colors.fg;
       const yl = Math.min(Math.max(t.Y(0), 20), t.h - 6), xl = Math.min(Math.max(t.X(0), 10), t.w - 30);
       sub(ctx, labels[0][0], labels[0][1], t.w - 22, yl - 8);
-      sub(ctx, labels[1][0], labels[1][1], xl + 6, 16);
+      sub(ctx, labels[1][0], labels[1][1], xl + 6, 58);
     }
     function sub(ctx, a, b, x, y) {   // "L" with subscript "x"
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
@@ -728,7 +673,7 @@
       begin(phCv, phCtx);
       const ctx = phCtx, r = phCv.getBoundingClientRect(), w = r.width, h = r.height;
       const L = 56, Rm = 12, T = w > 640 ? 26 : 40, B = 24;
-      const lbl = center === 0 ? '∠L(s)' : '∠(1 + L(s))';
+      const lbl = '∠(1 + L(s))';
       ctx.font = '700 13px ' + colors.body; ctx.fillStyle = colors.fg; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       ctx.fillText('Phase ' + lbl + ' along the contour (unwrapped)', L, 6);
       if (!img) return;
@@ -790,12 +735,11 @@
       requestAnimationFrame(frame);
     }
     setTool('draw');
-    chkClose.checked = closeCurve;
-    requestAnimationFrame(() => { loadPreset(P0); presetSel.value = String(PRESETS.indexOf(P0)); if (lTarget) lView = Object.assign({}, lTarget); requestAnimationFrame(frame); });
+    requestAnimationFrame(() => { init(); if (lTarget) lView = Object.assign({}, lTarget); requestAnimationFrame(frame); });
 
     // for tests
-    window.NyquistDemo = { state: () => ({ img, contour, Lsys, center, kGain, clRoots, sView }), loadPreset: i => loadPreset(PRESETS[i]), setK, compute: () => compute(), PRESETS };
+    window.NyquistDemo = { state: () => ({ img, contour, Lsys, center, kGain, clRoots, sView }), setL: str => { lInput.value = str; applyText(); }, setNyquist, setK, compute: () => compute() };
   }
 
-  window.NyquistSim = { run, PRESETS };
+  window.NyquistSim = { run };
 })();
