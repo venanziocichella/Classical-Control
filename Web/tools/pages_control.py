@@ -249,6 +249,7 @@ PAGES['pendulum'] = dict(
     matlab='PEN_Realtime_Demo.m',
     c0_rh='10*(s+2)*(s+3)/(s*(s/100+1))', c0_rl='10*(s+2)*(s+3)/(s*(s/100+1))',
     c0_bd='196*(0.268*s+1)/(0.0537*s+1)*(1.667*s+1)/(12.15*s+1)',
+    noise_bd="{ max: 5, step: 0.1, unit: '°' }",   # Example 8.15: measurement noise in deg
     js=r"""
 // Damped pendulum from Chapter 1.
 const k = 1, g0 = 9.8, L = 1;   // damping [1/s], gravity [m/s^2], length [m]

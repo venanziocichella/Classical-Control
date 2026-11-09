@@ -18,6 +18,7 @@
 <script src="../engine.js"></script>
 <script>
 const DEFAULT_C = '196*(0.268*s+1)/(0.0537*s+1)*(1.667*s+1)/(12.15*s+1)';   // default C(s) of the Bode Plots example
+window.MEAS_NOISE = { max: 5, step: 0.1, unit: '°' };   // max/step/unit of the noise slider
 
 // Damped pendulum from Chapter 1.
 const k = 1, g0 = 9.8, L = 1;   // damping [1/s], gravity [m/s^2], length [m]
