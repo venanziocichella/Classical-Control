@@ -271,7 +271,7 @@
   function colorsNow() {
     const c = {};
     ['fg', 'muted', 'grid', 'ref', 'out', 'pole', 'unstable-bg', 'part', 'part2', 'metal', 'panel', 'alert',
-     'water', 'road', 'sky', 'cold', 'warm', 'font-mono', 'font-body']
+     'water', 'road', 'sky', 'cold', 'warm', 'noise', 'font-mono', 'font-body']
       .forEach(n => { c[n.replace(/-(.)/g, (_, a) => a.toUpperCase())] = token('--' + n); });
     c.mono = c.fontMono; c.body = c.fontBody;
     return c;
@@ -506,14 +506,25 @@
   // ---------------------------------------------------------------------
   // Tracking demos: the output follows a reference that changes in time.
   // Port of the engine of DCM, CAR, CS, IP, MSD, PEN, SAT, TM and WT.
+  // Optional measurement noise: cfg.noise (or window.MEAS_NOISE, set by the
+  // page) = { max, step, unit } in plotted units (yScale) adds a slider; the
+  // controller then sees y + n, with n Gaussian, held for NOISE_TS seconds.
   // ---------------------------------------------------------------------
+  function gauss() {
+    let a = 0;
+    while (a === 0) a = Math.random();
+    return Math.sqrt(-2 * Math.log(a)) * Math.cos(2 * Math.PI * Math.random());
+  }
   function run(cfg) {
     const root = document.getElementById(cfg.mount || 'app');
     const NH = 1000;                       // samples in the plot window
+    const NOISE_TS = 1e-3;                 // noise sample time [s] (1 kHz sensor)
+    const noiseCfg = cfg.noise || window.MEAS_NOISE || null;
+    let sigma = 0, nz = 0, nzNext = 0;      // noise std (plotted units), current sample, next draw time
 
     let x = cfg.x0.slice(), xc = [], t = 0, r = cfg.r(0), u = 0;
     let d = 0, dUntil = -1, paused = false, stopped = false, speed = 1, dt = 1e-3;
-    let hist = { t: [], y: [], r: [] };
+    let hist = { t: [], y: [], r: [], m: [] };
 
     const sceneCv = el('canvas', { class: 'cs-scene', 'aria-label': cfg.sceneLabel || 'animation' });
     const plotCv = el('canvas', { class: 'cs-plot', 'aria-label': 'output and reference vs time' });
@@ -522,7 +533,24 @@
     const btnPause = el('button', { type: 'button', class: 'cs-btn', onclick: () => togglePause() }, ['Pause']);
     const cp = controllerPanel(cfg, () => reset());
 
-    const panel = el('aside', { class: 'cs-panel' }, cp.sections.concat([
+    const noiseSec = [];
+    if (noiseCfg) {
+      const unit = noiseCfg.unit || '';
+      const lbl = el('span', { class: 'fr-val' });
+      const sl = el('input', { id: 'noise', class: 'cs-range', type: 'range', min: 0, max: noiseCfg.max, step: noiseCfg.step || noiseCfg.max / 100, value: 0,
+        'aria-label': 'Measurement noise standard deviation', oninput: () => setNoise(+sl.value) });
+      const setNoise = v => {
+        sigma = v; sl.value = String(v);
+        lbl.textContent = v > 0 ? 'σ = ' + v.toFixed(1) + unit : 'off';
+      };
+      setNoise(0);
+      noiseSec.push(el('section', { class: 'cs-sec' }, [
+        el('h2', { text: 'Measurement noise' }), sl,
+        el('div', { class: 'cs-row cs-mid' }, [el('button', { type: 'button', class: 'cs-btn', onclick: () => setNoise(0) }, ['No noise']), lbl]),
+        el('p', { class: 'cs-note', text: 'The sensor adds random noise n (standard deviation σ) to the measured output: the controller sees e = r − (y + n).' })]));
+    }
+
+    const panel = el('aside', { class: 'cs-panel' }, cp.sections.concat(noiseSec, [
       el('section', { class: 'cs-sec' }, [
         el('h2', { text: 'Disturbance' }),
         el('div', { class: 'cs-row' }, [
@@ -543,7 +571,7 @@
     cp.mount();
 
     function deriv(x, xc) {
-      const ctrl = cp.ctrl, e = r - cfg.y(x);
+      const ctrl = cp.ctrl, e = r - cfg.y(x) - nz;
       let uc = ctrl.D * e;
       for (let i = 0; i < ctrl.n; i++) uc += ctrl.C[i] * xc[i];
       const us = Math.min(Math.max(uc, cfg.uLim[0]), cfg.uLim[1]);
@@ -554,6 +582,8 @@
     function step(h) {
       if (t >= dUntil) d = 0;
       r = cfg.r(t);
+      if (sigma > 0) { if (t >= nzNext) { nz = sigma / cfg.yScale * gauss(); nzNext = t + NOISE_TS; } }
+      else nz = 0;
       const [k1, c1] = deriv(x, xc);
       const [k2, c2] = deriv(axpy(x, h / 2, k1), axpy(xc, h / 2, c1));
       const [k3, c3] = deriv(axpy(x, h / 2, k2), axpy(xc, h / 2, c2));
@@ -566,8 +596,8 @@
     }
     function reset() {
       x = cfg.x0.slice(); xc = new Array(cp.ctrl.n).fill(0); t = 0; r = cfg.r(0); u = 0;
-      d = 0; dUntil = -1; stopped = false;
-      hist = { t: [], y: [], r: [] };
+      d = 0; dUntil = -1; stopped = false; nz = 0; nzNext = 0;
+      hist = { t: [], y: [], r: [], m: [] };
       if (cfg.onReset) cfg.onReset();
     }
     function doPush(dir) { d = dir * cfg.push; dUntil = t + cfg.pushTime; }
@@ -595,7 +625,8 @@
           if (sample >= win / NH) {
             sample = 0;
             hist.t.push(t); hist.y.push(cfg.y(x) * cfg.yScale); hist.r.push(r * cfg.yScale);
-            if (hist.t.length > NH) { hist.t.shift(); hist.y.shift(); hist.r.shift(); }
+            hist.m.push(sigma > 0 ? (cfg.y(x) + nz) * cfg.yScale : NaN);
+            if (hist.t.length > NH) { hist.t.shift(); hist.y.shift(); hist.r.shift(); hist.m.shift(); }
           }
         }
       } else carry = 0;
@@ -606,8 +637,9 @@
       const t1 = Math.max(win, t);
       drawTimePlot(plotCv, pctx, {
         tLim: [t1 - win, t1], yLabel: cfg.yLabel,
-        traces: [{ t: hist.t, v: hist.r, color: colors.ref, dash: [6, 4], width: 1.5, label: 'reference r' },
-                 { t: hist.t, v: hist.y, color: colors.out, width: 2, label: 'output y' }]
+        traces: [{ t: hist.t, v: hist.r, color: colors.ref, dash: [6, 4], width: 1.5, label: 'reference r' }]
+          .concat(hist.m.some(Number.isFinite) ? [{ t: hist.t, v: hist.m, color: colors.noise, width: 1, label: 'measured y + n' }] : [])
+          .concat([{ t: hist.t, v: hist.y, color: colors.out, width: 2, label: 'output y' }])
       }, colors);
       cp.drawPoles(colors);
       msg.textContent = stopped ? (cfg.failText || 'The simulation diverged.') + '  Press R to reset.'

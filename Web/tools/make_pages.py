@@ -74,6 +74,8 @@ def main():
             pre = ''
             if 'DEFAULT_C' in p['js']:
                 pre = f"\nconst DEFAULT_C = '{p[key]}';   // default C(s) of the {chapter} example"
+            if key == 'c0_bd' and 'noise_bd' in p:   # measurement-noise slider (Bode page only)
+                pre += f"\nwindow.MEAS_NOISE = {p['noise_bd']};   // max/step/unit of the noise slider"
             write(WEB / folder / f'{name}.html', SHELL.format(
                 title=p['title'], h1=html.escape(p['h1']), lead=html.escape(p['lead']) + ' Type a controller C(s) and press Apply.',
                 source='pages_control.py', matlab=f"{chapter}/{FOLDER[name]}/{p['matlab']}",
