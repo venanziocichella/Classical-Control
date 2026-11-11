@@ -76,6 +76,8 @@ def main():
                 pre = f"\nconst DEFAULT_C = '{p[key]}';   // default C(s) of the {chapter} example"
             if key == 'c0_bd' and 'noise_bd' in p:   # measurement-noise slider (Bode page only)
                 pre += f"\nwindow.MEAS_NOISE = {p['noise_bd']};   // max/step/unit of the noise slider"
+            if key == 'c0_bd' and 'u_bd' in p:       # control-input plot (Bode page only)
+                pre += f"\nwindow.U_PLOT = {{ label: '{p['u_bd']}' }};   // label of the input plot"
             write(WEB / folder / f'{name}.html', SHELL.format(
                 title=p['title'], h1=html.escape(p['h1']), lead=html.escape(p['lead']) + ' Type a controller C(s) and press Apply.',
                 source='pages_control.py', matlab=f"{chapter}/{FOLDER[name]}/{p['matlab']}",

@@ -18,6 +18,8 @@
 <script src="../engine.js"></script>
 <script>
 const DEFAULT_C = '2*(s+1)/s';   // default C(s) of the Bode Plots example
+window.MEAS_NOISE = { max: 2, step: 0.05, digits: 2, unit: ' °C' };   // max/step/unit of the noise slider
+window.U_PLOT = { label: 'u = −P' };   // label of the input plot
 
 // Cold storage unit from Chapter 1. Input u = -P (minus the cooling power).
 const h = 1;        // heat transfer constant [1/s]

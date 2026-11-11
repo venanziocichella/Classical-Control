@@ -13,6 +13,7 @@ PAGES['dc-motor'] = dict(
     matlab='DCM_Realtime_Demo.m',
     c0_rh='10', c0_rl='10', c0_bd='65.4*(0.0211*s+1)/(0.00844*s+1)',
     noise_bd="{ max: 5, step: 0.1, unit: '°' }",   # measurement noise in deg
+    u_bd='v [V]',                                    # plot of the armature voltage
     js=r"""
 // DC motor from Chapter 1 with L_a = 0 (ball-on-plate servo values).
 const K = 1.53;       // steady-state speed gain [rad/(V s)]
@@ -113,6 +114,8 @@ PAGES['cold-storage'] = dict(
     lead='The AC cools the room to a temperature that changes every 6 s. It can only cool, so P ≥ 0.',
     matlab='CS_Realtime_Demo.m',
     c0_rh='2*(s+1)/s', c0_rl='2*(s+1)/s', c0_bd='2*(s+1)/s',
+    noise_bd="{ max: 2, step: 0.05, digits: 2, unit: ' °C' }",   # measurement noise in deg C
+    u_bd='u = −P',
     js=r"""
 // Cold storage unit from Chapter 1. Input u = -P (minus the cooling power).
 const h = 1;        // heat transfer constant [1/s]
@@ -207,6 +210,7 @@ PAGES['mass-spring-damper'] = dict(
     matlab='MSD_Realtime_Demo.m',
     c0_rh='100*(1 + 3/s)', c0_rl='800*(1 + 0/s)', c0_bd='760*(s+1)/(7.14*s+1)',
     noise_bd="{ max: 0.05, step: 0.001, digits: 3, unit: ' m' }",   # measurement noise in m
+    u_bd='u [N]',
     js=r"""
 // Mass-spring-damper (same values as MSD_Control_Design.m).
 const m = 1, b = 8.8, k = 40;   // [kg], [N s/m], [N/m]
@@ -252,6 +256,7 @@ PAGES['pendulum'] = dict(
     c0_rh='10*(s+2)*(s+3)/(s*(s/100+1))', c0_rl='10*(s+2)*(s+3)/(s*(s/100+1))',
     c0_bd='196*(0.268*s+1)/(0.0537*s+1)*(1.667*s+1)/(12.15*s+1)',
     noise_bd="{ max: 5, step: 0.1, unit: '°' }",   # Example 8.15: measurement noise in deg
+    u_bd='u',
     js=r"""
 // Damped pendulum from Chapter 1.
 const k = 1, g0 = 9.8, L = 1;   // damping [1/s], gravity [m/s^2], length [m]

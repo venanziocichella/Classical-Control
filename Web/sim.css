@@ -25,6 +25,7 @@
   --ok: #2f7d32;
   --warn: #9a6b00;
   --noise: rgba(208, 96, 42, 0.8);   /* noisy measurement trace */
+  --u: #7b4fa0;           /* control input trace */
   --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 }
@@ -32,7 +33,7 @@
   :root:not([data-theme="light"]) {
     --bg: #11161b; --panel: #192028; --fg: #e4e9ee; --muted: #94a0ac; --line: #2c3640; --grid: #26303a;
     --accent: #6ea8ec; --out: #6ea8ec; --ref: #7cc474; --pole: #f07a68; --unstable-bg: rgba(240, 122, 104, 0.09);
-    --part: #f08a52; --metal: #6c7782; --alert: #f07a68; --ok: #7cc474; --warn: #e2b44a; --noise: rgba(240, 138, 82, 0.8);
+    --part: #f08a52; --metal: #6c7782; --alert: #f07a68; --ok: #7cc474; --warn: #e2b44a; --noise: rgba(240, 138, 82, 0.8); --u: #b58be0;
     --part2: #6e9ad6; --water: #3f7fbf; --road: #3a4048; --sky: #070d18; --cold: #4f82e8; --warm: #e07850;
     color-scheme: dark;
   }
@@ -40,7 +41,7 @@
 :root[data-theme="dark"] {
   --bg: #11161b; --panel: #192028; --fg: #e4e9ee; --muted: #94a0ac; --line: #2c3640; --grid: #26303a;
   --accent: #6ea8ec; --out: #6ea8ec; --ref: #7cc474; --pole: #f07a68; --unstable-bg: rgba(240, 122, 104, 0.09);
-  --part: #f08a52; --metal: #6c7782; --alert: #f07a68; --ok: #7cc474; --warn: #e2b44a; --noise: rgba(240, 138, 82, 0.8);
+  --part: #f08a52; --metal: #6c7782; --alert: #f07a68; --ok: #7cc474; --warn: #e2b44a; --noise: rgba(240, 138, 82, 0.8); --u: #b58be0;
     --part2: #6e9ad6; --water: #3f7fbf; --road: #3a4048; --sky: #070d18; --cold: #4f82e8; --warm: #e07850;
   color-scheme: dark;
 }
@@ -63,6 +64,7 @@ header.cs-head p { margin: 0; color: var(--muted); max-width: 70ch; }
 .cs-scene { display: block; width: 100%; height: clamp(240px, 46vh, 460px); }
 .cs-plotwrap { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
 .cs-plot { display: block; width: 100%; height: clamp(170px, 26vh, 260px); }
+.cs-plot.cs-uplot { height: clamp(120px, 17vh, 180px); border-top: 1px solid var(--line); }
 .cs-msg { position: absolute; top: 12px; left: 0; right: 0; text-align: center; font-weight: 700; font-size: 1.15rem; color: var(--alert); pointer-events: none; }
 
 .cs-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; display: grid; min-width: 0; }

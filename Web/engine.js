@@ -271,7 +271,7 @@
   function colorsNow() {
     const c = {};
     ['fg', 'muted', 'grid', 'ref', 'out', 'pole', 'unstable-bg', 'part', 'part2', 'metal', 'panel', 'alert',
-     'water', 'road', 'sky', 'cold', 'warm', 'noise', 'font-mono', 'font-body']
+     'water', 'road', 'sky', 'cold', 'warm', 'noise', 'u', 'font-mono', 'font-body']
       .forEach(n => { c[n.replace(/-(.)/g, (_, a) => a.toUpperCase())] = token('--' + n); });
     c.mono = c.fontMono; c.body = c.fontBody;
     return c;
@@ -509,6 +509,8 @@
   // Optional measurement noise: cfg.noise (or window.MEAS_NOISE, set by the
   // page) = { max, step, unit, digits } in plotted units (yScale) adds a slider; the
   // controller then sees y + n, with n Gaussian, held for NOISE_TS seconds.
+  // Optional input plot: cfg.uPlot (or window.U_PLOT) = { label } adds a second
+  // time plot of the input applied to the plant, with the limits cfg.uLim dotted.
   // ---------------------------------------------------------------------
   function gauss() {
     let a = 0;
@@ -521,13 +523,15 @@
     const NOISE_TS = 1e-3;                 // noise sample time [s] (1 kHz sensor)
     const noiseCfg = cfg.noise || window.MEAS_NOISE || null;
     let sigma = 0, nz = 0, nzNext = 0;      // noise std (plotted units), current sample, next draw time
+    const uCfg = cfg.uPlot || window.U_PLOT || null;
 
     let x = cfg.x0.slice(), xc = [], t = 0, r = cfg.r(0), u = 0;
     let d = 0, dUntil = -1, paused = false, stopped = false, speed = 1, dt = 1e-3;
-    let hist = { t: [], y: [], r: [], m: [] };
+    let hist = { t: [], y: [], r: [], m: [], u: [] };
 
     const sceneCv = el('canvas', { class: 'cs-scene', 'aria-label': cfg.sceneLabel || 'animation' });
     const plotCv = el('canvas', { class: 'cs-plot', 'aria-label': 'output and reference vs time' });
+    const uCv = uCfg ? el('canvas', { class: 'cs-plot cs-uplot', 'aria-label': 'control input vs time' }) : null;
     const msg = el('div', { class: 'cs-msg', role: 'status' });
     const tLbl = el('span', { class: 'cs-time', text: 't = 0.0 s' });
     const btnPause = el('button', { type: 'button', class: 'cs-btn', onclick: () => togglePause() }, ['Pause']);
@@ -565,9 +569,9 @@
         tLbl])
     ]));
     const main = el('div', { class: 'cs-main' }, [
-      el('div', { class: 'cs-stage' }, [sceneCv, msg]), el('div', { class: 'cs-plotwrap' }, [plotCv])]);
+      el('div', { class: 'cs-stage' }, [sceneCv, msg]), el('div', { class: 'cs-plotwrap' }, uCv ? [plotCv, uCv] : [plotCv])]);
     root.append(el('div', { class: 'cs-grid' }, [main, panel]));
-    const sctx = setupCanvas(sceneCv), pctx = setupCanvas(plotCv);
+    const sctx = setupCanvas(sceneCv), pctx = setupCanvas(plotCv), uctx = uCv ? setupCanvas(uCv) : null;
     cp.mount();
 
     function deriv(x, xc) {
@@ -597,7 +601,7 @@
     function reset() {
       x = cfg.x0.slice(); xc = new Array(cp.ctrl.n).fill(0); t = 0; r = cfg.r(0); u = 0;
       d = 0; dUntil = -1; stopped = false; nz = 0; nzNext = 0;
-      hist = { t: [], y: [], r: [], m: [] };
+      hist = { t: [], y: [], r: [], m: [], u: [] };
       if (cfg.onReset) cfg.onReset();
     }
     function doPush(dir) { d = dir * cfg.push; dUntil = t + cfg.pushTime; }
@@ -626,7 +630,8 @@
             sample = 0;
             hist.t.push(t); hist.y.push(cfg.y(x) * cfg.yScale); hist.r.push(r * cfg.yScale);
             hist.m.push(sigma > 0 ? (cfg.y(x) + nz) * cfg.yScale : NaN);
-            if (hist.t.length > NH) { hist.t.shift(); hist.y.shift(); hist.r.shift(); hist.m.shift(); }
+            hist.u.push(u);
+            if (hist.t.length > NH) { hist.t.shift(); hist.y.shift(); hist.r.shift(); hist.m.shift(); hist.u.shift(); }
           }
         }
       } else carry = 0;
@@ -641,6 +646,18 @@
           .concat(hist.m.some(Number.isFinite) ? [{ t: hist.t, v: hist.m, color: colors.noise, width: 1, label: 'measured y + n' }] : [])
           .concat([{ t: hist.t, v: hist.y, color: colors.out, width: 2, label: 'output y' }])
       }, colors);
+      if (uCv) {
+        const [u0, u1] = cfg.uLim, pad = 0.1 * (u1 - u0);   // extra room on top for the legend
+        drawTimePlot(uCv, uctx, {
+          tLim: [t1 - win, t1], yLabel: uCfg.label || 'u', yLim: [u0 - pad, u1 + 3.5 * pad],
+          traces: [{ t: hist.t, v: hist.u, color: colors.u, width: 1.2, label: 'input ' + (uCfg.label || 'u').split(' ')[0] + ' (limits dotted)' }],
+          overlay: (ctx, X, Y) => {
+            ctx.strokeStyle = colors.muted; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
+            [u0, u1].forEach(v => { ctx.beginPath(); ctx.moveTo(X(t1 - win), Y(v)); ctx.lineTo(X(t1), Y(v)); ctx.stroke(); });
+            ctx.setLineDash([]);
+          }
+        }, colors);
+      }
       cp.drawPoles(colors);
       msg.textContent = stopped ? (cfg.failText || 'The simulation diverged.') + '  Press R to reset.'
         : paused ? 'Paused' : d !== 0 ? 'Disturbance!' : '';
