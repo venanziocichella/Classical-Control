@@ -12,6 +12,7 @@ PAGES['dc-motor'] = dict(
     lead='The shaft follows a commanded angle that changes every 2 s.',
     matlab='DCM_Realtime_Demo.m',
     c0_rh='10', c0_rl='10', c0_bd='65.4*(0.0211*s+1)/(0.00844*s+1)',
+    noise_bd="{ max: 5, step: 0.1, unit: '°' }",   # measurement noise in deg
     js=r"""
 // DC motor from Chapter 1 with L_a = 0 (ball-on-plate servo values).
 const K = 1.53;       // steady-state speed gain [rad/(V s)]
@@ -205,6 +206,7 @@ PAGES['mass-spring-damper'] = dict(
     lead='A force u moves the mass to a target position that changes every 4 s.',
     matlab='MSD_Realtime_Demo.m',
     c0_rh='100*(1 + 3/s)', c0_rl='800*(1 + 0/s)', c0_bd='760*(s+1)/(7.14*s+1)',
+    noise_bd="{ max: 0.05, step: 0.001, digits: 3, unit: ' m' }",   # measurement noise in m
     js=r"""
 // Mass-spring-damper (same values as MSD_Control_Design.m).
 const m = 1, b = 8.8, k = 40;   // [kg], [N s/m], [N/m]
