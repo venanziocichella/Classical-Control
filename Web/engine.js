@@ -354,6 +354,7 @@
   function controllerPanel(cfg, onApply) {
     const self = {};
     const gBox = el('div', { class: 'cs-tf' }, [el('span', { class: 'cs-lhs', text: 'G(s) =' }), fracEl(tfParts(cfg.G.num, cfg.G.den))]);
+    const gNote = el('p', { class: 'cs-note', text: cfg.G.text });
     const cInput = el('input', { id: 'c-input', class: 'cs-input', type: 'text', spellcheck: 'false', autocomplete: 'off', 'aria-label': 'Controller C(s)' });
     cInput.value = cfg.C0;
     const cErr = el('div', { class: 'cs-err', role: 'alert', hidden: '' });
@@ -365,7 +366,7 @@
       el('label', { for: 'c-input', class: 'cs-lhs', text: 'C(s) =' }), cInput,
       el('button', { type: 'submit', class: 'cs-btn cs-primary' }, ['Apply'])]);
     self.sections = [
-      el('section', { class: 'cs-sec' }, [el('h2', { text: 'Plant' }), gBox, el('p', { class: 'cs-note', text: cfg.G.text })]),
+      el('section', { class: 'cs-sec' }, [el('h2', { text: 'Plant' }), gBox, gNote]),
       el('section', { class: 'cs-sec' }, [
         el('h2', { text: 'Controller' }), form, cErr,
         el('p', { class: 'cs-note', text: 'Simulating:' }), cBox,
@@ -379,6 +380,7 @@
 
     function setController(str) {
       const c = parseC(str);
+      self.cstr = str;
       const ss = tf2ss(c.num, c.den);
       const a = convDesc(ss.den, cfg.G.den), b = convDesc(ss.num, cfg.G.num);   // ss.num, ss.den: same scaling
       const n = Math.max(a.length, b.length);
@@ -427,6 +429,14 @@
         const px = cx + re * sc, py = cy - im * sc, s = 4.5;
         ctx.beginPath(); ctx.moveTo(px - s, py - s); ctx.lineTo(px + s, py + s); ctx.moveTo(px + s, py - s); ctx.lineTo(px - s, py + s); ctx.stroke();
       });
+    };
+    // The plant changed (cfg.G replaced, e.g. by a parameter slider): redraw G(s)
+    // and recompute the closed-loop poles with the current C(s).
+    self.setG = () => {
+      gBox.replaceChildren(el('span', { class: 'cs-lhs', text: 'G(s) =' }), fracEl(tfParts(cfg.G.num, cfg.G.den)));
+      gNote.textContent = cfg.G.text;
+      setController(self.cstr);
+      show();
     };
     try { setController(cfg.C0); } catch (err) { setController('1'); }
     show();
@@ -511,6 +521,10 @@
   // controller then sees y + n, with n Gaussian, held for NOISE_TS seconds.
   // Optional input plot: cfg.uPlot (or window.U_PLOT) = { label } adds a second
   // time plot of the input applied to the plant, with the limits cfg.uLim dotted.
+  // Optional plant parameter: cfg.param = { title, label, min, max, step, value,
+  // unit, digits, note, set(v) } adds a slider; set(v) updates the plant
+  // constants and returns the new linear model { num, den, text } (cfg.G), and
+  // the simulation restarts.
   // ---------------------------------------------------------------------
   function gauss() {
     let a = 0;
@@ -537,6 +551,21 @@
     const btnPause = el('button', { type: 'button', class: 'cs-btn', onclick: () => togglePause() }, ['Pause']);
     const cp = controllerPanel(cfg, () => reset());
 
+    const paramSec = [];
+    if (cfg.param) {
+      const pc = cfg.param, digits = pc.digits ?? 1;
+      const lbl = el('span', { class: 'fr-val' });
+      const show = v => { lbl.textContent = pc.label + ' = ' + (+v).toFixed(digits) + (pc.unit || ''); };
+      const sl = el('input', { id: 'param', class: 'cs-range', type: 'range', min: pc.min, max: pc.max, step: pc.step, value: pc.value,
+        'aria-label': pc.title, oninput: () => show(sl.value),
+        onchange: () => { cfg.G = pc.set(+sl.value); cp.setG(); reset(); } });
+      show(pc.value);
+      cfg.G = pc.set(pc.value); cp.setG();
+      paramSec.push(el('section', { class: 'cs-sec' }, [
+        el('h2', { text: pc.title }), sl, el('div', { class: 'cs-row cs-mid' }, [lbl]),
+        el('p', { class: 'cs-note', text: pc.note || '' })]));
+    }
+
     const noiseSec = [];
     if (noiseCfg) {
       const unit = noiseCfg.unit || '', digits = noiseCfg.digits ?? 1;
@@ -554,7 +583,7 @@
         el('p', { class: 'cs-note', text: 'The sensor adds random noise n (standard deviation σ) to the measured output: the controller sees e = r − (y + n).' })]));
     }
 
-    const panel = el('aside', { class: 'cs-panel' }, cp.sections.concat(noiseSec, [
+    const panel = el('aside', { class: 'cs-panel' }, [cp.sections[0]].concat(paramSec, cp.sections.slice(1), noiseSec, [
       el('section', { class: 'cs-sec' }, [
         el('h2', { text: 'Disturbance' }),
         el('div', { class: 'cs-row' }, [

@@ -146,7 +146,7 @@ HIDE = {   # files kept in the repo but not listed on the course home
 }
 FR_FOLDER = {'Servo (First Order)': 'servo', 'Spring Damper (High Pass)': 'spring-damper',
              'Mass Spring Damper (Second Order)': 'mass-spring-damper', 'Muffled Song': 'muffled-song'}
-NYQ_FOLDER = {'Contour Mapping': 'contour-mapping'}
+NYQ_FOLDER = {'Contour Mapping': 'contour-mapping', 'Bicycle': 'bicycle'}
 DEMO_PAGES = {'frequency-response': FR_PAGES, 'nyquist': NYQ_PAGES}
 
 
