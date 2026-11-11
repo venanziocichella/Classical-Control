@@ -507,7 +507,7 @@
   // Tracking demos: the output follows a reference that changes in time.
   // Port of the engine of DCM, CAR, CS, IP, MSD, PEN, SAT, TM and WT.
   // Optional measurement noise: cfg.noise (or window.MEAS_NOISE, set by the
-  // page) = { max, step, unit } in plotted units (yScale) adds a slider; the
+  // page) = { max, step, unit, digits } in plotted units (yScale) adds a slider; the
   // controller then sees y + n, with n Gaussian, held for NOISE_TS seconds.
   // ---------------------------------------------------------------------
   function gauss() {
@@ -535,13 +535,13 @@
 
     const noiseSec = [];
     if (noiseCfg) {
-      const unit = noiseCfg.unit || '';
+      const unit = noiseCfg.unit || '', digits = noiseCfg.digits ?? 1;
       const lbl = el('span', { class: 'fr-val' });
       const sl = el('input', { id: 'noise', class: 'cs-range', type: 'range', min: 0, max: noiseCfg.max, step: noiseCfg.step || noiseCfg.max / 100, value: 0,
         'aria-label': 'Measurement noise standard deviation', oninput: () => setNoise(+sl.value) });
       const setNoise = v => {
         sigma = v; sl.value = String(v);
-        lbl.textContent = v > 0 ? 'σ = ' + v.toFixed(1) + unit : 'off';
+        lbl.textContent = v > 0 ? 'σ = ' + v.toFixed(digits) + unit : 'off';
       };
       setNoise(0);
       noiseSec.push(el('section', { class: 'cs-sec' }, [
