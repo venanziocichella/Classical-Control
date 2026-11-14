@@ -53,10 +53,70 @@ figcaption{font-size:14px;color:var(--muted)}
 <nav><h1>Derivations Companion</h1><div class="sub">ME3600 Control of Mechanical Engineering Systems</div>
 <input id="q" type="search" placeholder="Search: 8.17, crossover, beta…" aria-label="Search derivations">
 <button class="menu" type="button">Index</button>
-<ul class="idx"><h2>Chapter 8 · Bode Plots</h2><ul><li><a href="#eq-lead_omega_g"><b>(8.18)</b>Gain crossover frequency $\omega_g$ (lead example)</a></li><li><a href="#eq-lead_phi_m"><b>(8.19)</b>Phase margin $\phi_m$ of $K_cG$ (lead example)</a></li><li><a href="#eq-lead_omega_m"><b>(8.20)</b>Frequency of maximum phase lead $\omega_m=\omega_c$ (lead example)</a></li><li><a href="#eq-lag_omega_phi"><b>(8.21)</b>Phase crossover frequency $\omega_\phi$ (lag example)</a></li><li><a href="#eq-lag_omega_g"><b>(8.22)</b>Gain crossover frequency $\omega_g$ (lag example)</a></li><li><a href="#eq-lag_g_m"><b>(8.23)</b>Gain margin $g_m$ of $K_cG$ (lag example)</a></li><li><a href="#eq-lag_phi_m"><b>(8.24)</b>Phase margin $\phi_m$ of $K_cG$ (lag example)</a></li><li><a href="#eq-lag_omega_c"><b>(8.25)</b>Desired crossover frequency $\omega_c$ (lag example)</a></li><li><a href="#eq-lag_beta"><b>(8.26)</b>Attenuation factor $\beta$ (lag example)</a></li><li><a href="#eq-LL_lead_omega_m"><b>(8.27)</b>Frequency $\omega_m$ in the lead-only attempt (lead-lag example)</a></li><li><a href="#eq-LL_lag_omega_c"><b>(8.28)</b>Desired crossover frequency $\omega_c$ in the lag-only attempt (lead-lag example)</a></li><li><a href="#eq-LL_lag_beta"><b>(8.29)</b>Attenuation factor $\beta$ in the lag-only attempt (lead-lag example)</a></li><li><a href="#eq-LL_beta"><b>(8.30)</b>Attenuation factor $\beta$ of the lag portion (lead-lag example)</a></li><li><a href="#eq-LL_alpha"><b>(8.31)</b>Attenuation factor $\alpha$ of the lead portion (lead-lag example)</a></li><li><a href="#eq-LL_omega_m"><b>(8.32)</b>Frequency $\omega_m$ of the lead portion (lead-lag example)</a></li></ul></ul>
+<ul class="idx"><h2>Chapter 2 · Signal Representation: The Laplace Transform</h2><ul><li><a href="#eq-ch02_pfe_ab"><b>(2.17)</b>Partial fraction coefficients $A$, $B$ for $\ddot x+3\dot x+2x=0$</a></li><li><a href="#eq-ch02_pfe_ex2"><b>(2.18)</b>Partial fraction coefficients $A$, $B$, $C$ for $\ddot y+5\dot y+4y=2e^{-2t}$</a></li><li><a href="#eq-ch02_pfe_sin"><b>(2.19)</b>Partial fraction coefficients $A$, $B$, $C$ for $\ddot y+2\dot y+5y=u_h(t)$</a></li><li><a href="#eq-ch02_pfe_3rd"><b>(2.20)</b>Partial fraction coefficients $A$, $B$, $C$ for the third order example</a></li></ul><h2>Chapter 8 · Bode Plots</h2><ul><li><a href="#eq-lead_omega_g"><b>(8.18)</b>Gain crossover frequency $\omega_g$ (lead example)</a></li><li><a href="#eq-lead_phi_m"><b>(8.19)</b>Phase margin $\phi_m$ of $K_cG$ (lead example)</a></li><li><a href="#eq-lead_omega_m"><b>(8.20)</b>Frequency of maximum phase lead $\omega_m=\omega_c$ (lead example)</a></li><li><a href="#eq-lag_omega_phi"><b>(8.21)</b>Phase crossover frequency $\omega_\phi$ (lag example)</a></li><li><a href="#eq-lag_omega_g"><b>(8.22)</b>Gain crossover frequency $\omega_g$ (lag example)</a></li><li><a href="#eq-lag_g_m"><b>(8.23)</b>Gain margin $g_m$ of $K_cG$ (lag example)</a></li><li><a href="#eq-lag_phi_m"><b>(8.24)</b>Phase margin $\phi_m$ of $K_cG$ (lag example)</a></li><li><a href="#eq-lag_omega_c"><b>(8.25)</b>Desired crossover frequency $\omega_c$ (lag example)</a></li><li><a href="#eq-lag_beta"><b>(8.26)</b>Attenuation factor $\beta$ (lag example)</a></li><li><a href="#eq-LL_lead_omega_m"><b>(8.27)</b>Frequency $\omega_m$ in the lead-only attempt (lead-lag example)</a></li><li><a href="#eq-LL_lag_omega_c"><b>(8.28)</b>Desired crossover frequency $\omega_c$ in the lag-only attempt (lead-lag example)</a></li><li><a href="#eq-LL_lag_beta"><b>(8.29)</b>Attenuation factor $\beta$ in the lag-only attempt (lead-lag example)</a></li><li><a href="#eq-LL_beta"><b>(8.30)</b>Attenuation factor $\beta$ of the lag portion (lead-lag example)</a></li><li><a href="#eq-LL_alpha"><b>(8.31)</b>Attenuation factor $\alpha$ of the lead portion (lead-lag example)</a></li><li><a href="#eq-LL_omega_m"><b>(8.32)</b>Frequency $\omega_m$ of the lead portion (lead-lag example)</a></li></ul></ul>
 <div class="tools"><button id="stepall" type="button">All step by step</button><button id="showall" type="button">Show all steps</button></div>
 </nav>
-<main><header><h1>Derivations Companion</h1><p>Every step behind the numbered results of the lecture notes. 15 derivations. Equation numbers and pages refer to the current edition of the notes; links from the PDF keep working across editions because they use names, not numbers.</p></header>
+<main><header><h1>Derivations Companion</h1><p>Every step behind the numbered results of the lecture notes. 19 derivations. Equation numbers and pages refer to the current edition of the notes; links from the PDF keep working across editions because they use names, not numbers.</p></header>
+<h2 class="chap" data-ch="2">Chapter 2 — Signal Representation: The Laplace Transform</h2>
+<section class="deriv" id="eq-ch02_pfe_ab" data-ch="2" data-search="2.17 partial fraction coefficients $a$, $b$ for $\ddot x+3\dot x+2x=0$ ch02 pfe ab"><h3><span class="num">Derivation of Eq. (2.17)</span><span>Partial fraction coefficients $A$, $B$ for $\ddot x+3\dot x+2x=0$</span></h3><div class="meta"><span>Book p. 53</span><a href="#eq-ch02_pfe_ab">link</a><button class="tog" type="button">Step by step</button></div><div class="step"><div class="eq given"><span class="lbl">Starting from</span>\[
+X(s) = \frac{A}{s+1} + \frac{B}{s+2}.
+\]</div></div><div class="step"><p>Multiply both sides by \( s^2 + 3s + 2 \) to clear the denominators:</p></div><div class="step"><div class="eq">\[
+as + b + 3a = A(s + 2) + B(s + 1).
+\]</div></div><div class="step"><p>Expanding and collecting terms, we have:</p></div><div class="step"><div class="eq">\[
+as + b + 3a = As + 2A + Bs + B.
+\]</div></div><div class="step"><div class="eq">\[
+(as + b + 3a) = (A+B)s + (2A + B).
+\]</div></div><div class="step"><p>Equating coefficients, we get:</p></div><div class="step"><div class="eq">\[
+A + B = a,
+\]</div></div><div class="step"><div class="eq">\[
+2A + B = b + 3a.
+\]</div></div><div class="step"><p>Solving the two algebraic equations above we get $A = 2a + b$ and $B = -a - b$, and therefore</p></div><div class="step"><div class="eq result"><span class="tag">(2.17)</span>\begin{equation*}
+X(s) = \frac{2a+b}{s+1} - \frac{a+b}{s+2}.
+\end{equation*}</div></div><div class="ctrl"><button class="next" type="button">Next step ▸</button><button class="all" type="button">Show all</button><span class="meta count"></span></div></section>
+<section class="deriv" id="eq-ch02_pfe_ex2" data-ch="2" data-search="2.18 partial fraction coefficients $a$, $b$, $c$ for $\ddot y+5\dot y+4y=2e^{-2t}$ ch02 pfe ex2"><h3><span class="num">Derivation of Eq. (2.18)</span><span>Partial fraction coefficients $A$, $B$, $C$ for $\ddot y+5\dot y+4y=2e^{-2t}$</span></h3><div class="meta"><span>Book p. 54</span><a href="#eq-ch02_pfe_ex2">link</a><button class="tog" type="button">Step by step</button></div><div class="step"><div class="eq given"><span class="lbl">Starting from</span>\[
+Y(s) = \frac{2}{(s + 2)(s + 4)(s + 1)} = \frac{A}{s + 2} + \frac{B}{s + 4} + \frac{C}{s + 1}.
+\]</div></div><div class="step"><p>Multiplying both sides by \((s + 2)(s + 4)(s + 1)\), we get:</p></div><div class="step"><div class="eq">\[
+2 = A(s + 4)(s + 1) + B(s + 2)(s + 1) + C(s + 2)(s + 4).
+\]</div></div><div class="step"><p>Setting \(s = -2\), \(s = -4\), and \(s = -1\) gives us \(A = -1\), \(B = \frac{1}{3}\), and \(C = \frac{2}{3}\), respectively.</p></div><div class="step"><div class="eq result"><span class="tag">(2.18)</span>\begin{equation*}
+Y(s) = - \frac{1}{s + 2} + \frac{1}{3} \frac{1}{s + 4} + \frac{2}{3} \frac{1}{s + 1}.
+\end{equation*}</div></div><div class="ctrl"><button class="next" type="button">Next step ▸</button><button class="all" type="button">Show all</button><span class="meta count"></span></div></section>
+<section class="deriv" id="eq-ch02_pfe_sin" data-ch="2" data-search="2.19 partial fraction coefficients $a$, $b$, $c$ for $\ddot y+2\dot y+5y=u_h(t)$ ch02 pfe sin"><h3><span class="num">Derivation of Eq. (2.19)</span><span>Partial fraction coefficients $A$, $B$, $C$ for $\ddot y+2\dot y+5y=u_h(t)$</span></h3><div class="meta"><span>Book p. 55</span><a href="#eq-ch02_pfe_sin">link</a><button class="tog" type="button">Step by step</button></div><div class="step"><div class="eq given"><span class="lbl">Starting from</span>\[
+Y(s) = \frac{A}{s} + \frac{Bs + C}{s^2 + 2s + 5}
+\]</div></div><div class="step"><p>Multiplying both sides by \( s(s^2 + 2s + 5) \):</p></div><div class="step"><div class="eq">\[
+1 = A(s^2 + 2s + 5) + (Bs + C)s
+\]</div></div><div class="step"><p>Expanding both sides:</p></div><div class="step"><div class="eq">\[
+1 = A(s^2 + 2s + 5) + Bs^2 + Cs
+\]</div></div><div class="step"><div class="eq">\[
+1 = (A + B)s^2 + (2A + C)s + 5A
+\]</div></div><div class="step"><div>Equating coefficients:
+<ol>
+<li>\( A + B = 0 \)
+<li>\( 2A + C = 0 \)
+<li>\( 5A = 1 \)
+</ol>
+From \( 5A = 1 \), we get \( A = \frac{1}{5} \). Substituting \( A = \frac{1}{5} \) into the other equations:</div></div><div class="step"><div class="eq">\[
+A + B = 0 \implies B = -\frac{1}{5}
+\]</div></div><div class="step"><div class="eq">\[
+2A + C = 0 \implies C = -\frac{2}{5}
+\]</div></div><div class="step"><div class="eq result"><span class="tag">(2.19)</span>\begin{equation*}
+Y(s) = \frac{1}{5s} - \frac{1}{5} \cdot \frac{s + 2}{s^2 + 2s + 5}
+\end{equation*}</div></div><div class="ctrl"><button class="next" type="button">Next step ▸</button><button class="all" type="button">Show all</button><span class="meta count"></span></div></section>
+<section class="deriv" id="eq-ch02_pfe_3rd" data-ch="2" data-search="2.20 partial fraction coefficients $a$, $b$, $c$ for the third order example ch02 pfe 3rd"><h3><span class="num">Derivation of Eq. (2.20)</span><span>Partial fraction coefficients $A$, $B$, $C$ for the third order example</span></h3><div class="meta"><span>Book p. 56</span><a href="#eq-ch02_pfe_3rd">link</a><button class="tog" type="button">Step by step</button></div><div class="step"><div class="eq given"><span class="lbl">Starting from</span>\[
+\frac{(s + 4)(s + 2)}{s(s + 1)(s + 3)} = \frac{A}{s} + \frac{B}{s + 1} + \frac{C}{s + 3}
+\]</div></div><div class="step"><p>Multiplying both sides by \(s(s+1)(s+3)\), we have:</p></div><div class="step"><div class="eq">\[
+(s + 4)(s + 2) = A(s+1)(s+3) + Bs(s+3) + Cs(s+1)
+\]</div></div><div class="step"><p>Expanding both sides, we obtain:</p></div><div class="step"><div class="eq">\[
+s^2 + 6s + 8 = (A + B + C)s^2 + (4A + 3B + C)s + 3A
+\]</div></div><div class="step"><div>Equating coefficients, we arrive at the following equations:
+<ol>
+<li>\(A + B + C = 1\)
+<li>\(4A + 3B + C = 6\)
+<li>\(3A = 8\)
+</ol>
+Solving the equations, we find \(A = \frac{8}{3}\).
+Further, solving for \(B\) and \(C\), we get \(B = -\frac{3}{2}\) and \(C = -\frac{1}{6}\).</div></div><div class="step"><div class="eq result"><span class="tag">(2.20)</span>\begin{equation*}
+Y(s) = \frac{8}{3} \cdot \frac{1}{s} - \frac{3}{2} \cdot \frac{1}{s + 1} - \frac{1}{6} \cdot \frac{1}{s + 3}
+\end{equation*}</div></div><div class="ctrl"><button class="next" type="button">Next step ▸</button><button class="all" type="button">Show all</button><span class="meta count"></span></div></section>
 <h2 class="chap" data-ch="8">Chapter 8 — Bode Plots</h2>
 <section class="deriv" id="eq-lead_omega_g" data-ch="8" data-search="8.18 gain crossover frequency $\omega_g$ (lead example) lead omega g"><h3><span class="num">Derivation of Eq. (8.18)</span><span>Gain crossover frequency $\omega_g$ (lead example)</span></h3><div class="meta"><span>Book p. 254</span><a href="#eq-lead_omega_g">link</a><button class="tog" type="button">Step by step</button></div><div class="step"><div class="eq given"><span class="lbl">Starting from</span>\begin{eqnarray*}
 		-\underbrace{\atan\left(\frac{\omega_{\phi}}{0}\right)}_{90^{\circ}}-\atan\left(\frac{\omega_{\phi}}{2}\right)
