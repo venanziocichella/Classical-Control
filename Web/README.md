@@ -3,7 +3,7 @@
 The MATLAB real-time demos as web pages, for students without MATLAB.
 Open `index.html` (double-click works, or serve the folder, e.g. GitHub Pages).
 
-- `routh-hurwitz/`, `root-locus/`: the 12 control examples. Type C(s) in the page
+- `routh-hurwitz/`, `root-locus/`: the 13 control examples (the bicycle shares its sim with `nyquist/`). Type C(s) in the page
   (numbers, `s`, `+ - * / ^`, parentheses: the same text works in the MATLAB demos).
 - `frequency-response/`: servo, spring-damper, mass-spring-damper, the muffled song.
 - `nyquist/`: contour mapping (type L(s) the same way as C(s), draw on the s-plane) and

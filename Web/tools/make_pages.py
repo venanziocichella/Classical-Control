@@ -53,7 +53,7 @@ FOLDER = {   # repo folder of each example
     'inverted-pendulum': 'Inverted Pendulum', 'mass-spring-damper': 'Mass Spring Damper',
     'pendulum': 'Pendulum', 'satellite': 'Satellite', 'two-mass': 'Two Mass System',
     'water-tank': 'Water Tank', 'ball-on-plate': 'Ball on Plate', 'highwire-artist': 'Highwire Artist',
-    'cart-pendulum': 'Inverted Pendulum on Cart',
+    'cart-pendulum': 'Inverted Pendulum on Cart', 'bicycle': 'Bicycle',
 }
 
 
