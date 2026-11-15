@@ -146,6 +146,7 @@ header.ix-head { max-width: 1000px; }
 .ix-head a { color: var(--accent); }
 .ix-list .hm-files a { display: inline; padding: 0; border: 0; background: none; height: auto; color: var(--accent); }
 .ix-list a.cs-btn { display: inline-block; height: auto; padding: 6px 12px; }
+.hm-files .hm-later { font-family: var(--font-body); color: var(--muted); }
 .ix-list a.cs-primary { background: var(--accent); border-color: var(--accent); color: var(--panel); }
 
 /* Nyquist contour mapping demo */
