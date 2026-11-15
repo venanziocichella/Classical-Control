@@ -159,8 +159,8 @@ NYQ_FOLDER = {'Contour Mapping': 'contour-mapping', 'Bicycle': 'bicycle'}
 RL_FOLDER = {'Root Locus Animation': 'root-locus-animation'}
 FIRST = {'Root Locus': ['Root Locus Animation']}   # cards shown first, alone in their own row
 DEMO_PAGES = {'frequency-response': FR_PAGES, 'nyquist': NYQ_PAGES}
-# Lecture notes: a GitHub Release asset (too big to keep re-committing); this link always serves the latest release.
-NOTES_URL = 'https://github.com/venanziocichella/Classical-Control/releases/latest/download/ME3600_Lecture_Notes.pdf'
+# Lecture notes: replace this file with the new main.pdf (same name) to update the link.
+NOTES_URL = 'Lecture%20Notes/ME3600_Lecture_Notes.pdf'
 NOTES_INFO = 'PDF, 523 pages, 27 MB'
 HOMEWORK = 8                # Homework/HW{n}.pdf for n = 1..HOMEWORK
 HW_SOLUTIONS = 6            # Homework/HW{n}_Solution.pdf posted for n = 1..HW_SOLUTIONS
