@@ -2,8 +2,9 @@
 
 Writes Web/routh-hurwitz/*.html, Web/root-locus/*.html, Web/bode/*.html (the
 examples with a Bode design, c0_bd in pages_control.py),
-Web/frequency-response/*.html, Web/nyquist/*.html and Web/index.html from the
-page definitions in pages_control.py, pages_fr.py and pages_nyq.py. The pages
+Web/root-locus/root-locus-animation.html, Web/frequency-response/*.html,
+Web/nyquist/*.html and Web/index.html from the page definitions in
+pages_control.py, pages_rl.py, pages_fr.py and pages_nyq.py. The pages
 load ../engine.js (plus ../fr.js or ../nyquist.js) and ../sim.css, so the Web
 folder works as is from a double-click or on a web server (GitHub Pages).
 """
@@ -14,6 +15,7 @@ import urllib.parse
 from pages_control import PAGES
 from pages_fr import FR_PAGES
 from pages_nyq import NYQ_PAGES
+from pages_rl import RL_PAGES
 
 WEB = pathlib.Path(__file__).resolve().parent.parent
 REPO = WEB.parent
@@ -86,6 +88,10 @@ def main():
         write(WEB / 'frequency-response' / f'{name}.html', SHELL.format(
             title=p['title'], h1=html.escape(p['h1']), lead=html.escape(p['lead']),
             source='pages_fr.py', matlab=p['matlab'], scripts=tags(p.get('scripts', ['engine.js', 'fr.js'])), pre='', js=p['js']))
+    for name, p in RL_PAGES.items():
+        write(WEB / 'root-locus' / f'{name}.html', SHELL.format(
+            title=p['title'], h1=html.escape(p['h1']), lead=html.escape(p['lead']),
+            source='pages_rl.py', matlab=p['matlab'], scripts=tags(p['scripts']), pre='', js=p['js']))
     for name, p in NYQ_PAGES.items():
         write(WEB / 'nyquist' / f'{name}.html', SHELL.format(
             title=p['title'], h1=html.escape(p['h1']), lead=html.escape(p['lead']),
@@ -101,15 +107,18 @@ def index():
             f'<span class="ix-lead">{html.escape(p["lead"])}</span></a></li>' for name, p in items)
     groups = [
         ('routh-hurwitz', 'Routh Hurwitz', 'Same sims as the MATLAB Realtime demos: type C(s), watch the closed loop, read the closed-loop poles.', PAGES.items()),
-        ('root-locus', 'Root Locus', 'The same sims with the Root Locus default controllers.', PAGES.items()),
+        ('root-locus', 'Root Locus', 'The root locus animation (type L(s), slide K), then the same sims with the Root Locus default controllers.',
+         PAGES.items(), RL_PAGES.items()),
         ('bode', 'Bode Plots', 'Bode designs: PI (cold storage), lead (DC motor), lag (mass-spring-damper) and lead-lag (pendulum) compensators.',
          [(n, p) for n, p in PAGES.items() if 'c0_bd' in p]),
         ('frequency-response', 'Frequency Response', 'Chapter 7 demos: what a linear system does to a sinusoid, and a song played through G(s).', FR_PAGES.items()),
         ('nyquist', 'Nyquist', 'Chapter 9: draw a curve or contour on the s-plane and see its image through L(s); encirclements of −1 and the Nyquist criterion.', NYQ_PAGES.items()),
     ]
-    body = '\n'.join(
-        f'  <section class="ix-group">\n    <h2>{t}</h2>\n    <p>{html.escape(d)}</p>\n    <ul class="ix-list">\n{cards(f, it)}\n    </ul>\n  </section>'
-        for f, t, d, it in groups)
+    def section(f, t, d, it, first=()):   # first: cards shown alone in their own row
+        top = ''.join(f'    <ul class="ix-list ix-first">\n{cards(f, [x])}\n    </ul>\n' for x in first)
+        return (f'  <section class="ix-group">\n    <h2>{t}</h2>\n    <p>{html.escape(d)}</p>\n{top}'
+                f'    <ul class="ix-list">\n{cards(f, it)}\n    </ul>\n  </section>')
+    body = '\n'.join(section(*g) for g in groups)
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -147,11 +156,13 @@ HIDE = {   # files kept in the repo but not listed on the course home
 FR_FOLDER = {'Servo (First Order)': 'servo', 'Spring Damper (High Pass)': 'spring-damper',
              'Mass Spring Damper (Second Order)': 'mass-spring-damper', 'Muffled Song': 'muffled-song'}
 NYQ_FOLDER = {'Contour Mapping': 'contour-mapping', 'Bicycle': 'bicycle'}
+RL_FOLDER = {'Root Locus Animation': 'root-locus-animation'}
+FIRST = {'Root Locus': ['Root Locus Animation']}   # cards shown first, alone in their own row
 DEMO_PAGES = {'frequency-response': FR_PAGES, 'nyquist': NYQ_PAGES}
 
 
 def home():
-    slug = {v: k for k, v in FOLDER.items()} | FR_FOLDER | NYQ_FOLDER
+    slug = {v: k for k, v in FOLDER.items()} | FR_FOLDER | NYQ_FOLDER | RL_FOLDER
     url = lambda path: urllib.parse.quote(path.relative_to(REPO).as_posix())
 
     def files(folder):
@@ -166,7 +177,7 @@ def home():
 
     def card(folder, demo):
         name = slug.get(folder.name)
-        p = DEMO_PAGES.get(demo, PAGES).get(name) if name else None
+        p = (RL_PAGES if name in RL_PAGES else DEMO_PAGES.get(demo, PAGES)).get(name) if name else None
         run = f'<a class="cs-btn cs-primary" href="Web/{demo}/{name}.html">Run in the browser</a>' if p and demo else ''
         lead = f'<p class="ix-lead">{html.escape(p["lead"])}</p>' if p else ''
         return f'      <li class="hm-card"><h3>{html.escape(folder.name)}</h3>{lead}{run}{files(folder)}</li>'
@@ -176,8 +187,11 @@ def home():
         d = REPO / folder
         subs = sorted(p for p in d.iterdir() if p.is_dir() and not p.name.startswith('.'))
         top = files(d)
+        first = [p for p in subs if p.name in FIRST.get(folder, [])]
+        subs = [p for p in subs if p not in first]
         sections.append(f'  <section class="ix-group">\n    <h2>{folder}</h2>\n'
                         + (f'    {top}\n' if top else '')
+                        + ''.join(f'    <ul class="ix-list ix-first">\n{card(p, demo)}\n    </ul>\n' for p in first)
                         + (f'    <ul class="ix-list">\n' + '\n'.join(card(p, demo) for p in subs) + '\n    </ul>\n' if subs else '')
                         + '  </section>')
     body = '\n'.join(sections)

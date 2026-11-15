@@ -142,6 +142,7 @@ header.ix-head { max-width: 1000px; }
 .hm-files a { color: var(--accent); text-decoration: none; }
 .hm-files a:hover { text-decoration: underline; }
 .ix-group > .hm-files { margin-bottom: 12px; }
+.ix-list.ix-first { margin-bottom: 10px; }
 .ix-head a { color: var(--accent); }
 .ix-list .hm-files a { display: inline; padding: 0; border: 0; background: none; height: auto; color: var(--accent); }
 .ix-list a.cs-btn { display: inline-block; height: auto; padding: 6px 12px; }
@@ -166,3 +167,8 @@ header.ix-head { max-width: 1000px; }
 .np-tools .cs-btn { padding: 6px 9px; }
 .np-grid .cs-select { max-width: 100%; min-width: 0; }
 .np-grid .cs-badge:empty { display: none; }
+
+/* root locus animation */
+.fr-card canvas.rl-plane { height: clamp(340px, 72vh, 760px); }
+.rl-kform { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 0.8fr); gap: 8px; align-items: center; }
+.rl-num { width: 100%; box-sizing: border-box; }
