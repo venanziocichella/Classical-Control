@@ -163,7 +163,7 @@ DEMO_PAGES = {'frequency-response': FR_PAGES, 'nyquist': NYQ_PAGES}
 NOTES_URL = 'Lecture%20Notes/ME3600_Lecture_Notes.pdf'
 NOTES_INFO = 'PDF, 523 pages, 27 MB'
 HOMEWORK = 8                # Homework/HW{n}.pdf for n = 1..HOMEWORK
-HW_SOLUTIONS = 6            # Homework/HW{n}_Solution.pdf posted for n = 1..HW_SOLUTIONS
+HW_SOLUTIONS = 7            # Homework/HW{n}_Solution.pdf posted for n = 1..HW_SOLUTIONS
 
 
 def home():
