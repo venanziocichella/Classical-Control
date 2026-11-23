@@ -1,7 +1,7 @@
 /* GoatCounter analytics: page views + link clicks (no cookies).
    Set GC_CODE to your GoatCounter site code (the "xyz" in xyz.goatcounter.com). */
 (function () {
-  var GC_CODE = 'YOURCODE';
+  var GC_CODE = 'venanzio';
   if (GC_CODE === 'YOURCODE') return;
   var s = document.createElement('script');
   s.async = true;
